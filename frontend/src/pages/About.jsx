@@ -28,7 +28,7 @@ const About = () => (
         <p className="mt-6 text-neutral-700 leading-relaxed">
           Give the ones who curate their space with intent — the anime obsessives, the JDM heads, the gamers, the collectors — a place that speaks their language and treats them like they know what they want. Because they do.
         </p>
-        <Link to="/collections" className="pl-btn pl-btn-dark mt-8">Shop the Drops</Link>
+        <Link to="/shop" className="pl-btn pl-btn-dark mt-8">Shop the Drops</Link>
       </FadeUp>
     </div>
   </div>

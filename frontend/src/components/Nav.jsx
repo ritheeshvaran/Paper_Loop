@@ -1,17 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, ShoppingBag, User, Menu, X } from "lucide-react";
+import { Search, ShoppingBag, User, Menu, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { api } from "@/lib/api";
+import { resolveMedia } from "@/lib/media";
 
 const links = [
-  { to: "/collections", label: "Shop" },
-  { to: "/collections/anime", label: "Anime" },
-  { to: "/collections/cars", label: "Cars" },
-  { to: "/collections/keychains", label: "Keychains" },
-  { to: "/coming-soon", label: "Coming Soon" },
+  { to: "/", label: "Home", end: true },
+  { to: "/shop", label: "Shop" },
   { to: "/about", label: "About" },
 ];
 
@@ -23,17 +21,21 @@ export const Nav = ({ settings }) => {
   const { cart, setDrawerOpen } = useCart();
   const loc = useLocation();
 
+  const isHome = loc.pathname === "/";
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
-    window.addEventListener("scroll", onScroll);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => { setMobileOpen(false); setSearchOpen(false); }, [loc.pathname]);
 
+  const glass = scrolled || !isHome;
+
   return (
     <>
-      {/* Announcement bar */}
       {settings?.announcement && (
         <div data-testid="announcement-bar" className="bg-[color:var(--pl-black)] text-white text-center text-[11px] tracking-widest uppercase py-2 font-medium">
           {settings.announcement}
@@ -44,32 +46,46 @@ export const Nav = ({ settings }) => {
         data-testid="site-nav"
         initial={false}
         animate={{
-          backgroundColor: scrolled ? "rgba(10,10,10,0.72)" : "rgba(10,10,10,0.35)",
-          borderBottomColor: scrolled ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0)",
+          backgroundColor: glass ? "rgba(10,10,10,0.7)" : "rgba(10,10,10,0)",
+          borderBottomColor: glass ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0)",
+          backdropFilter: glass ? "blur(20px) saturate(180%)" : "blur(0px)",
         }}
-        transition={{ duration: 0.25 }}
-        className="sticky top-0 z-50 pl-glass-dark border-b text-white"
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        className="sticky top-0 z-50 border-b text-white"
+        style={{ WebkitBackdropFilter: glass ? "blur(20px) saturate(180%)" : "none" }}
       >
         <div className="pl-container flex items-center justify-between h-16 md:h-20">
-          <Link to="/" data-testid="nav-logo" className="flex items-center gap-2 shrink-0">
+          <Link to="/" data-testid="nav-logo" className="flex items-center gap-2 shrink-0" data-cursor="Home">
             {settings?.logo_url ? (
-              <img src={settings.logo_url} alt="Paper & Loop" className="h-8 md:h-10 w-auto" />
+              <img src={resolveMedia(settings.logo_url)} alt="Paper & Loop" className="h-8 md:h-10 w-auto" />
             ) : (
               <span className="font-display text-lg tracking-tight">Paper &amp; Loop</span>
             )}
           </Link>
 
-          <nav className="hidden lg:flex items-center gap-8">
+          <nav className="hidden lg:flex items-center gap-10 absolute left-1/2 -translate-x-1/2">
             {links.map((l) => (
               <NavLink
                 key={l.to}
                 to={l.to}
+                end={l.end}
                 data-testid={`nav-link-${l.label.toLowerCase().replace(/\s+/g, "-")}`}
                 className={({ isActive }) =>
-                  `text-[11px] tracking-[0.2em] uppercase font-semibold transition-colors ${isActive ? "text-[color:var(--pl-orange)]" : "text-white/80 hover:text-white"}`
+                  `relative text-[11px] tracking-[0.28em] uppercase font-semibold transition-colors ${isActive ? "text-white" : "text-white/75 hover:text-white"}`
                 }
               >
-                {l.label}
+                {({ isActive }) => (
+                  <span className="relative inline-flex flex-col items-center">
+                    {l.label}
+                    <motion.span
+                      layoutId="nav-underline"
+                      className="absolute -bottom-1 h-px bg-[color:var(--pl-orange)]"
+                      initial={false}
+                      animate={{ width: isActive ? 24 : 0 }}
+                      transition={{ type: "spring", damping: 22, stiffness: 320 }}
+                    />
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>
@@ -81,9 +97,6 @@ export const Nav = ({ settings }) => {
             <Link to={user ? "/account" : "/login"} data-testid="nav-account-btn" aria-label="Account" className="p-2 hover:text-[color:var(--pl-orange)] transition-colors" data-cursor={user ? "Account" : "Sign in"}>
               <User className="w-5 h-5" />
             </Link>
-            <Link to="/account/wishlist" data-testid="nav-wishlist-btn" aria-label="Wishlist" className="p-2 hover:text-[color:var(--pl-orange)] transition-colors hidden md:inline-flex">
-              <Heart className="w-5 h-5" />
-            </Link>
             <button
               data-testid="nav-cart-btn"
               aria-label="Cart"
@@ -93,9 +106,15 @@ export const Nav = ({ settings }) => {
             >
               <ShoppingBag className="w-5 h-5" />
               {cart.items?.length > 0 && (
-                <span data-testid="cart-count" className="absolute -top-0.5 -right-0.5 bg-[color:var(--pl-orange)] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                <motion.span
+                  key={cart.items.reduce((a, i) => a + i.quantity, 0)}
+                  initial={{ scale: 0 }} animate={{ scale: 1 }}
+                  transition={{ type: "spring", damping: 12, stiffness: 400 }}
+                  data-testid="cart-count"
+                  className="absolute -top-0.5 -right-0.5 bg-[color:var(--pl-orange)] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center"
+                >
                   {cart.items.reduce((a, i) => a + i.quantity, 0)}
-                </span>
+                </motion.span>
               )}
             </button>
             <button data-testid="nav-mobile-toggle" aria-label="Menu" onClick={() => setMobileOpen(true)} className="p-2 lg:hidden">
@@ -105,7 +124,6 @@ export const Nav = ({ settings }) => {
         </div>
       </motion.header>
 
-      {/* Mobile menu */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -121,19 +139,18 @@ export const Nav = ({ settings }) => {
             <nav className="pl-container flex-1 flex flex-col gap-6 justify-center">
               {links.map((l, i) => (
                 <motion.div key={l.to} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { delay: 0.05 * i } }}>
-                  <Link to={l.to} className="font-display text-4xl md:text-5xl uppercase tracking-tight hover:text-[color:var(--pl-orange)]">{l.label}</Link>
+                  <Link to={l.to} className="font-display text-5xl md:text-6xl uppercase tracking-tight hover:text-[color:var(--pl-orange)]">{l.label}</Link>
                 </motion.div>
               ))}
               <div className="mt-6 flex gap-3">
                 <Link to={user ? "/account" : "/login"} className="pl-btn pl-btn-primary">{user ? "Account" : "Sign in"}</Link>
-                <Link to="/account/wishlist" className="pl-btn pl-btn-ghost-dark">Wishlist</Link>
+                <Link to="/shop" className="pl-btn pl-btn-ghost-dark">Shop</Link>
               </div>
             </nav>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Search overlay */}
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
@@ -168,16 +185,16 @@ const SearchOverlay = ({ open, onClose }) => {
                 autoFocus
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search posters, keychains, categories…"
+                placeholder="Search posters, keychains…"
                 className="flex-1 bg-transparent text-white placeholder-white/40 font-display text-2xl md:text-4xl focus:outline-none"
               />
               <button onClick={onClose} aria-label="Close" className="text-white/60 hover:text-white p-2"><X /></button>
             </div>
             <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
               {results.map((p) => (
-                <a key={p.id} href={`/product/${p.slug}`} className="group block">
+                <a key={p.id} href={`/product/${p.slug}`} className="group block" data-cursor="View">
                   <div className="aspect-[3/4] overflow-hidden bg-neutral-900">
-                    <img src={p.images?.[0]} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                    <img src={resolveMedia(p.images?.[0])} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                   </div>
                   <div className="mt-2 text-white text-sm font-medium">{p.name}</div>
                   <div className="text-white/60 text-xs uppercase tracking-wider">{p.category_slug}</div>
@@ -187,7 +204,7 @@ const SearchOverlay = ({ open, onClose }) => {
                 <div className="col-span-full text-white/60 text-center py-16 font-display uppercase tracking-widest">Nothing matched. Try another word.</div>
               )}
               {!q && (
-                <div className="col-span-full text-white/40 text-sm uppercase tracking-widest">Popular · Anime · Cars · Gaming · Keychains</div>
+                <div className="col-span-full text-white/40 text-sm uppercase tracking-widest">Popular · Posters · Keychains · Anime · Cars</div>
               )}
             </div>
           </motion.div>

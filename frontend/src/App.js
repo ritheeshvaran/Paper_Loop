@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
@@ -12,7 +12,7 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 import Home from "@/pages/Home";
-import Collections from "@/pages/Collections";
+import Shop from "@/pages/Shop";
 import ProductDetail from "@/pages/ProductDetail";
 import About from "@/pages/About";
 import ComingSoon from "@/pages/ComingSoon";
@@ -50,6 +50,21 @@ const Shell = ({ settings, children }) => (
   </>
 );
 
+// Legacy /collections → /shop redirects (preserve deep-links from search results)
+const KEYCHAIN_SLUGS = new Set(["keychains", "keychain", "kc"]);
+const LegacyCollectionsRedirect = () => {
+  const { slug } = useParams();
+  if (!slug || slug === "all") return <Navigate to="/shop" replace />;
+  if (KEYCHAIN_SLUGS.has(slug)) return <Navigate to={`/shop?type=keychains`} replace />;
+  return <Navigate to={`/shop?type=posters&theme=${slug}`} replace />;
+};
+
+const ScrollToTop = () => {
+  const loc = useLocation();
+  useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, [loc.pathname]);
+  return null;
+};
+
 function App() {
   const [settings, setSettings] = useState(null);
   useEffect(() => {
@@ -61,12 +76,14 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <BrowserRouter>
+            <ScrollToTop />
             <Toaster position="bottom-right" theme="dark" />
             <CustomCursor />
             <Routes>
-              <Route path="/" element={<Shell settings={settings}><Home settings={settings} /></Shell>} />
-              <Route path="/collections" element={<Shell settings={settings}><Collections /></Shell>} />
-              <Route path="/collections/:slug" element={<Shell settings={settings}><Collections /></Shell>} />
+              <Route path="/" element={<Shell settings={settings}><Home /></Shell>} />
+              <Route path="/shop" element={<Shell settings={settings}><Shop /></Shell>} />
+              <Route path="/collections" element={<Navigate to="/shop" replace />} />
+              <Route path="/collections/:slug" element={<LegacyCollectionsRedirect />} />
               <Route path="/product/:slug" element={<Shell settings={settings}><ProductDetail /></Shell>} />
               <Route path="/about" element={<Shell settings={settings}><About /></Shell>} />
               <Route path="/coming-soon" element={<Shell settings={settings}><ComingSoon /></Shell>} />
