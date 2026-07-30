@@ -1,54 +1,97 @@
-import { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
-import { HOME } from "@/constants/testIds";
+import { Toaster } from "sonner";
+import { AuthProvider } from "@/context/AuthContext";
+import { CartProvider } from "@/context/CartContext";
+import { api } from "@/lib/api";
+import { Nav } from "@/components/Nav";
+import { Footer } from "@/components/Footer";
+import { CustomCursor } from "@/components/CustomCursor";
+import { CartDrawer } from "@/components/CartDrawer";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import Home from "@/pages/Home";
+import Collections from "@/pages/Collections";
+import ProductDetail from "@/pages/ProductDetail";
+import About from "@/pages/About";
+import ComingSoon from "@/pages/ComingSoon";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import Account from "@/pages/Account";
+import Wishlist from "@/pages/Wishlist";
+import Orders from "@/pages/Orders";
+import OrderDetail from "@/pages/OrderDetail";
+import Checkout from "@/pages/Checkout";
+import Payment from "@/pages/Payment";
+import Confirmation from "@/pages/Confirmation";
+import NotFound from "@/pages/NotFound";
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
+import AdminShell from "@/pages/admin/AdminShell";
+import AdminDashboard from "@/pages/admin/Dashboard";
+import AdminProducts from "@/pages/admin/Products";
+import AdminOrders from "@/pages/admin/Orders";
+import AdminOrderDetail from "@/pages/admin/OrderDetail";
+import AdminCategories from "@/pages/admin/Categories";
+import AdminSettings from "@/pages/admin/Settings";
+import AdminCustomers from "@/pages/admin/Customers";
 
+const Shell = ({ settings, children }) => (
+  <>
+    <Nav settings={settings} />
+    <main>{children}</main>
+    <Footer settings={settings} />
+    <CartDrawer />
+  </>
+);
+
+function App() {
+  const [settings, setSettings] = useState(null);
   useEffect(() => {
-    helloWorldApi();
+    api.get("/settings").then((r) => setSettings(r.data)).catch(() => {});
   }, []);
 
   return (
-    <div>
-      <header className="App-header">
-        <a
-          data-testid={HOME.emergentLink}
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
-
-function App() {
-  return (
     <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <CartProvider>
+          <BrowserRouter>
+            <Toaster position="bottom-right" theme="dark" />
+            <CustomCursor />
+            <Routes>
+              <Route path="/" element={<Shell settings={settings}><Home settings={settings} /></Shell>} />
+              <Route path="/collections" element={<Shell settings={settings}><Collections /></Shell>} />
+              <Route path="/collections/:slug" element={<Shell settings={settings}><Collections /></Shell>} />
+              <Route path="/product/:slug" element={<Shell settings={settings}><ProductDetail /></Shell>} />
+              <Route path="/about" element={<Shell settings={settings}><About /></Shell>} />
+              <Route path="/coming-soon" element={<Shell settings={settings}><ComingSoon /></Shell>} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+
+              <Route path="/account" element={<ProtectedRoute><Shell settings={settings}><Account /></Shell></ProtectedRoute>} />
+              <Route path="/account/wishlist" element={<ProtectedRoute><Shell settings={settings}><Wishlist /></Shell></ProtectedRoute>} />
+              <Route path="/account/orders" element={<ProtectedRoute><Shell settings={settings}><Orders /></Shell></ProtectedRoute>} />
+              <Route path="/account/orders/:id" element={<ProtectedRoute><Shell settings={settings}><OrderDetail /></Shell></ProtectedRoute>} />
+
+              <Route path="/checkout" element={<ProtectedRoute><Shell settings={settings}><Checkout /></Shell></ProtectedRoute>} />
+              <Route path="/checkout/payment/:id" element={<ProtectedRoute><Shell settings={settings}><Payment settings={settings} /></Shell></ProtectedRoute>} />
+              <Route path="/checkout/confirmation/:id" element={<ProtectedRoute><Shell settings={settings}><Confirmation /></Shell></ProtectedRoute>} />
+
+              <Route path="/admin" element={<ProtectedRoute adminOnly><AdminShell /></ProtectedRoute>}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="products" element={<AdminProducts />} />
+                <Route path="orders" element={<AdminOrders />} />
+                <Route path="orders/:id" element={<AdminOrderDetail />} />
+                <Route path="categories" element={<AdminCategories />} />
+                <Route path="customers" element={<AdminCustomers />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
+
+              <Route path="*" element={<Shell settings={settings}><NotFound /></Shell>} />
+            </Routes>
+          </BrowserRouter>
+        </CartProvider>
+      </AuthProvider>
     </div>
   );
 }

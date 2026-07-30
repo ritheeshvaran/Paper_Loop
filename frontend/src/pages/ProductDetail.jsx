@@ -1,0 +1,196 @@
+import React, { useEffect, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Heart, ShoppingBag, Minus, Plus, Truck, ShieldCheck, Package, ArrowLeft } from "lucide-react";
+import { api } from "@/lib/api";
+import { useCart } from "@/context/CartContext";
+import { formatINR } from "@/lib/format";
+import { ProductCard } from "@/components/ProductCard";
+import { FadeUp } from "@/components/Reveal";
+
+const ROOM_TEMPLATES = [
+  { name: "Bedroom", img: "https://images.pexels.com/photos/33050959/pexels-photo-33050959.jpeg?auto=compress&cs=tinysrgb&w=1600", zone: { top: "22%", left: "38%", width: "24%", height: "34%" } },
+  { name: "Gaming setup", img: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600", zone: { top: "18%", left: "36%", width: "28%", height: "38%" } },
+  { name: "Living room", img: "https://images.pexels.com/photos/36907020/pexels-photo-36907020.jpeg?auto=compress&cs=tinysrgb&w=1600", zone: { top: "20%", left: "40%", width: "22%", height: "32%" } },
+];
+
+const ProductDetail = () => {
+  const { slug } = useParams();
+  const [product, setProduct] = useState(null);
+  const [related, setRelated] = useState([]);
+  const [qty, setQty] = useState(1);
+  const [activeImg, setActiveImg] = useState(0);
+  const [showRoom, setShowRoom] = useState(false);
+  const [roomIdx, setRoomIdx] = useState(0);
+  const { addToCart, toggleWishlist, isWishlisted } = useCart();
+
+  useEffect(() => {
+    setQty(1); setActiveImg(0);
+    api.get(`/products/${slug}`).then((r) => {
+      setProduct(r.data);
+      api.get(`/products?category=${r.data.category_slug}&limit=8`).then((rr) => {
+        setRelated(rr.data.filter((p) => p.id !== r.data.id).slice(0, 4));
+      });
+    }).catch(() => setProduct(null));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [slug]);
+
+  if (!product) return <div className="min-h-[60vh] flex items-center justify-center font-display uppercase tracking-widest">Loading…</div>;
+
+  const images = [product.images?.[0], product.lifestyle_image, ...(product.images?.slice(1) || [])].filter(Boolean);
+  const outOfStock = (product.stock_quantity ?? 0) <= 0;
+  const lowStock = !outOfStock && (product.stock_quantity ?? 0) < 5;
+  const room = ROOM_TEMPLATES[roomIdx];
+
+  return (
+    <div className="pl-section-light">
+      <div className="pl-container pt-8">
+        <Link to={`/collections/${product.category_slug}`} className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-neutral-500 hover:text-black">
+          <ArrowLeft className="w-3 h-3" /> Back to {product.category_slug}
+        </Link>
+      </div>
+
+      <div className="pl-container py-8 md:py-12 grid lg:grid-cols-2 gap-10 lg:gap-16">
+        {/* Gallery */}
+        <div>
+          <motion.div
+            key={activeImg + (showRoom ? "-room" : "")}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="relative aspect-square lg:aspect-[4/5] bg-neutral-100 overflow-hidden"
+          >
+            {!showRoom ? (
+              <img src={images[activeImg]} alt={product.name} className="w-full h-full object-cover" />
+            ) : (
+              <div className="relative w-full h-full">
+                <img src={room.img} alt="Room preview" className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute" style={{ ...room.zone, boxShadow: "0 30px 80px -20px rgba(0,0,0,0.5)" }}>
+                  <img src={product.images?.[0]} alt="poster overlay" className="w-full h-full object-cover" style={{ filter: "brightness(0.95) contrast(1.05)" }} />
+                </div>
+              </div>
+            )}
+          </motion.div>
+
+          <div className="mt-3 flex items-center gap-3">
+            <div className="flex gap-2 overflow-x-auto">
+              {images.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={() => { setActiveImg(i); setShowRoom(false); }}
+                  className={`w-16 h-20 shrink-0 border-2 ${activeImg === i && !showRoom ? "border-black" : "border-transparent"} bg-neutral-100`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+            <button
+              data-testid="room-preview-toggle"
+              onClick={() => setShowRoom((s) => !s)}
+              className={`ml-auto pl-btn ${showRoom ? "pl-btn-primary" : "pl-btn-ghost-light"} !px-3 !py-2 !text-[10px]`}
+            >
+              {showRoom ? "Product View" : "Room Preview"}
+            </button>
+          </div>
+
+          {showRoom && (
+            <div className="mt-3 flex gap-2">
+              {ROOM_TEMPLATES.map((r, i) => (
+                <button key={r.name} onClick={() => setRoomIdx(i)} className={`px-3 py-1.5 text-[10px] uppercase tracking-widest border ${roomIdx === i ? "border-black bg-black text-white" : "border-neutral-300"}`}>{r.name}</button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div className="lg:sticky lg:top-32 self-start">
+          <div className="text-[11px] uppercase tracking-[0.2em] text-neutral-500">{product.category_slug}</div>
+          <h1 className="font-display uppercase text-3xl md:text-5xl mt-3 leading-none">{product.name}</h1>
+
+          <div className="mt-5 flex items-baseline gap-3 font-tabular">
+            <span data-testid="pdp-price" className="font-display text-3xl font-bold">{formatINR(product.final_price)}</span>
+            {product.has_discount && <><span className="text-neutral-400 line-through">{formatINR(product.price)}</span><span className="text-[color:var(--pl-orange)] text-sm font-bold uppercase tracking-widest">−{Math.round(product.discount_percent)}%</span></>}
+          </div>
+
+          <div className="mt-2 flex items-center gap-2 text-xs">
+            {outOfStock ? (
+              <span className="uppercase tracking-widest text-neutral-500 font-bold">Out of Stock</span>
+            ) : lowStock ? (
+              <span className="uppercase tracking-widest text-amber-700 font-bold">● Only {product.stock_quantity} left</span>
+            ) : (
+              <span className="uppercase tracking-widest text-green-700 font-bold">● In Stock</span>
+            )}
+          </div>
+
+          <p className="mt-6 text-neutral-700 leading-relaxed">{product.description}</p>
+
+          {/* Specs */}
+          <div className="mt-8 divide-y divide-neutral-200 border-y border-neutral-200">
+            {[
+              ["Material", product.material],
+              ["Size", product.size],
+              ["Finish", product.finish],
+            ].map(([k, v]) => (
+              <div key={k} className="flex justify-between py-3 text-sm">
+                <span className="uppercase tracking-widest text-[10px] text-neutral-500 mt-1">{k}</span>
+                <span className="text-right max-w-xs">{v}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Qty + CTA */}
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <div className="inline-flex items-center border border-black">
+              <button data-testid="pdp-qty-dec" onClick={() => setQty(Math.max(1, qty - 1))} className="p-3 hover:bg-neutral-100"><Minus className="w-4 h-4" /></button>
+              <span className="px-4 font-tabular font-bold">{qty}</span>
+              <button data-testid="pdp-qty-inc" onClick={() => setQty(qty + 1)} className="p-3 hover:bg-neutral-100"><Plus className="w-4 h-4" /></button>
+            </div>
+            <button
+              data-testid="pdp-add-to-cart"
+              disabled={outOfStock}
+              onClick={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                addToCart(product, qty, { x: r.left + 40, y: r.top + 20 });
+              }}
+              className="pl-btn pl-btn-primary flex-1 min-w-[200px] disabled:bg-neutral-400"
+            >
+              <ShoppingBag className="w-4 h-4" /> Add to Bag · {formatINR(product.final_price * qty)}
+            </button>
+            <button
+              data-testid="pdp-wishlist"
+              onClick={() => toggleWishlist(product)}
+              aria-label="Wishlist"
+              className="pl-btn pl-btn-ghost-light !px-4"
+            >
+              <Heart className={`w-5 h-5 ${isWishlisted(product.id) ? "fill-[color:var(--pl-orange)] text-[color:var(--pl-orange)]" : ""}`} />
+            </button>
+          </div>
+
+          {/* Trust row */}
+          <div className="mt-8 grid grid-cols-3 gap-3 text-xs">
+            {[{ i: <Truck className="w-4 h-4" />, t: "Free Delivery", s: "Across India, always" }, { i: <ShieldCheck className="w-4 h-4" />, t: "Secure UPI", s: "GPay-verified" }, { i: <Package className="w-4 h-4" />, t: "3–5 Day Dispatch", s: "Tracked shipping" }].map((f) => (
+              <div key={f.t} className="border border-neutral-200 p-3">
+                <div className="text-[color:var(--pl-orange)]">{f.i}</div>
+                <div className="mt-1 font-bold uppercase tracking-widest text-[10px]">{f.t}</div>
+                <div className="text-neutral-500 mt-0.5">{f.s}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Related */}
+      {related.length > 0 && (
+        <div className="pl-container py-16">
+          <FadeUp>
+            <div className="text-[11px] tracking-[0.25em] uppercase text-neutral-500 mb-4">You may also like</div>
+            <h2 className="font-display text-editorial uppercase mb-10">Same energy. <br /><span className="text-[color:var(--pl-orange)]">More drops.</span></h2>
+          </FadeUp>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {related.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ProductDetail;
