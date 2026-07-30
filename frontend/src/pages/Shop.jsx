@@ -76,7 +76,7 @@ const Shop = () => {
       if (v === undefined || v === null || v === "") next.delete(k);
       else next.set(k, v);
     });
-    setParams(next, { replace: true });
+    setParams(next);
   };
 
   const subChips = TAXONOMY[type]?.themes || [];
