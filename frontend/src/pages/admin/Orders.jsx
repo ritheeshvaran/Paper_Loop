@@ -47,7 +47,7 @@ const Orders = () => {
           </thead>
           <tbody>
             {orders.map((o) => (
-              <tr key={o.id} className="border-t border-neutral-800 hover:bg-neutral-800/50">
+              <tr key={o.id} data-testid={`order-row-${o.order_number}`} className="border-t border-neutral-800 hover:bg-neutral-800/50">
                 <td className="p-4"><Link to={`/admin/orders/${o.id}`} data-testid={`admin-order-${o.order_number}`} className="font-mono text-xs text-[color:var(--pl-orange)]">{o.order_number}</Link></td>
                 <td>
                   <div>{o.customer_name}</div>
