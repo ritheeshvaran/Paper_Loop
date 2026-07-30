@@ -14,7 +14,8 @@ const Orders = () => {
     if (status) p.set("status", status);
     api.get(`/admin/orders?${p.toString()}`).then((r) => setOrders(r.data));
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [status]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [status]);
 
   return (
     <div>

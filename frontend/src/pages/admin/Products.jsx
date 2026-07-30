@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import React, { useEffect, useRef, useState } from "react";
+import { api, API } from "@/lib/api";
 import { formatINR } from "@/lib/format";
+import { resolveMedia } from "@/lib/media";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, X } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Upload } from "lucide-react";
 
 const empty = {
   name: "", slug: "", category_slug: "anime", description: "",
@@ -18,6 +19,28 @@ const Products = () => {
   const [cats, setCats] = useState([]);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(empty);
+  const fileRef = useRef(null);
+  const lifestyleRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+
+  const uploadImage = async (file, target = "images") => {
+    const fd = new FormData(); fd.append("file", file);
+    setUploading(true);
+    try {
+      const token = localStorage.getItem("pl_token");
+      const res = await fetch(`${API}/admin/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const { url } = await res.json();
+      if (target === "lifestyle") setForm((f) => ({ ...f, lifestyle_image: url }));
+      else setForm((f) => ({ ...f, images: [...f.images.filter(Boolean), url] }));
+      toast.success("Uploaded");
+    } catch (e) { toast.error("Upload failed"); }
+    finally { setUploading(false); }
+  };
 
   const load = () => api.get("/admin/products").then((r) => setItems(r.data));
   useEffect(() => { load(); api.get("/categories").then((r) => setCats(r.data)); }, []);
@@ -68,7 +91,7 @@ const Products = () => {
             {items.map((p) => (
               <tr key={p.id} className="border-t border-neutral-800 hover:bg-neutral-800/50">
                 <td className="p-3 flex items-center gap-3">
-                  <img src={p.images?.[0]} alt="" className="w-10 h-12 object-cover bg-neutral-800" />
+                  <img src={resolveMedia(p.images?.[0])} alt="" className="w-10 h-12 object-cover bg-neutral-800" />
                   <div>
                     <div>{p.name}</div>
                     <div className="text-xs text-neutral-500 font-mono">{p.slug}</div>
@@ -107,7 +130,6 @@ const Products = () => {
                 ["price", "Price ₹", 1, "number"], ["discount_percent", "Discount %", 1, "number"],
                 ["stock_quantity", "Stock", 1, "number"],
                 ["material", "Material", 2, "text"], ["size", "Size", 1, "text"], ["finish", "Finish", 1, "text"],
-                ["lifestyle_image", "Lifestyle image URL", 2, "text"],
               ].map(([k, label, span, type]) => (
                 <div key={k} className={span === 2 ? "col-span-2" : "col-span-2 md:col-span-1"}>
                   <label className="text-[10px] uppercase tracking-widest text-neutral-500">{label}</label>
@@ -132,8 +154,37 @@ const Products = () => {
                 </select>
               </div>
               <div className="col-span-2">
-                <label className="text-[10px] uppercase tracking-widest text-neutral-500 block mb-2">Image URLs (comma-separated or one per line)</label>
-                <textarea rows={3} value={form.images.join("\n")} onChange={(e) => setForm({ ...form, images: e.target.value.split(/[\n,]/).map(s => s.trim()).filter(Boolean) })} className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 focus:outline-none" />
+                <label className="text-[10px] uppercase tracking-widest text-neutral-500 block mb-2">Product images</label>
+                <div className="grid grid-cols-4 gap-2 mb-2">
+                  {form.images.filter(Boolean).map((u, i) => (
+                    <div key={i} className="relative aspect-[3/4] bg-neutral-800 group">
+                      <img src={resolveMedia(u)} alt="" className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => setForm({ ...form, images: form.images.filter((_, k) => k !== i) })} className="absolute top-1 right-1 p-1 bg-black/80 text-white opacity-0 group-hover:opacity-100"><Trash2 className="w-3 h-3" /></button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => fileRef.current?.click()} className="aspect-[3/4] border border-dashed border-neutral-700 text-neutral-500 hover:text-white hover:border-neutral-500 flex flex-col items-center justify-center gap-1 text-xs uppercase tracking-widest">
+                    <Upload className="w-4 h-4" />
+                    {uploading ? "Uploading…" : "Upload"}
+                  </button>
+                  <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], "images")} />
+                </div>
+                <textarea rows={2} placeholder="Or paste image URLs (comma or newline separated)" value={form.images.join("\n")} onChange={(e) => setForm({ ...form, images: e.target.value.split(/[\n,]/).map(s => s.trim()).filter(Boolean) })} className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 focus:outline-none text-xs" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-[10px] uppercase tracking-widest text-neutral-500 block mb-2">Lifestyle image (shown on hover)</label>
+                <div className="flex gap-2 items-start">
+                  {form.lifestyle_image && (
+                    <div className="relative w-24 aspect-[3/4] bg-neutral-800 group shrink-0">
+                      <img src={resolveMedia(form.lifestyle_image)} alt="" className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => setForm({ ...form, lifestyle_image: "" })} className="absolute top-1 right-1 p-1 bg-black/80 text-white opacity-0 group-hover:opacity-100"><Trash2 className="w-3 h-3" /></button>
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <input value={form.lifestyle_image} onChange={(e) => setForm({ ...form, lifestyle_image: e.target.value })} placeholder="Lifestyle image URL" className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm" />
+                    <button type="button" onClick={() => lifestyleRef.current?.click()} className="mt-2 pl-btn pl-btn-ghost-dark !py-1.5 !px-3 !text-[10px]"><Upload className="w-3 h-3" /> Upload</button>
+                    <input ref={lifestyleRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], "lifestyle")} />
+                  </div>
+                </div>
               </div>
               <div className="col-span-2 flex flex-wrap gap-4 pt-2">
                 {["is_featured", "is_trending", "is_best_seller", "is_new", "is_limited"].map((k) => (

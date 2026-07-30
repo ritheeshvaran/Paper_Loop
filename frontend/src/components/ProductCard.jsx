@@ -1,9 +1,10 @@
 import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Heart, ShoppingBag, Eye } from "lucide-react";
+import { Heart, ShoppingBag } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { formatINR } from "@/lib/format";
+import { resolveMedia } from "@/lib/media";
 
 export const ProductCard = ({ product, index = 0 }) => {
   const ref = useRef(null);
@@ -19,8 +20,8 @@ export const ProductCard = ({ product, index = 0 }) => {
   };
   const onLeave = () => setTilt({ rx: 0, ry: 0 });
 
-  const primary = product.images?.[0];
-  const lifestyle = product.lifestyle_image || product.images?.[1] || primary;
+  const primary = resolveMedia(product.images?.[0]);
+  const lifestyle = resolveMedia(product.lifestyle_image || product.images?.[1] || product.images?.[0]);
   const wished = isWishlisted(product.id);
   const outOfStock = (product.stock_quantity ?? 0) <= 0;
   const lowStock = !outOfStock && (product.stock_quantity ?? 0) < 5;

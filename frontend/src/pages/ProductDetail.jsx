@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Heart, ShoppingBag, Minus, Plus, Truck, ShieldCheck, Package, ArrowLeft } from "lucide-react";
+import { Heart, ShoppingBag, Minus, Plus, Truck, ShieldCheck, Package, ArrowLeft, Bell } from "lucide-react";
 import { api } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import { formatINR } from "@/lib/format";
+import { resolveMedia } from "@/lib/media";
 import { ProductCard } from "@/components/ProductCard";
 import { FadeUp } from "@/components/Reveal";
+import { toast } from "sonner";
 
 const ROOM_TEMPLATES = [
   { name: "Bedroom", img: "https://images.pexels.com/photos/33050959/pexels-photo-33050959.jpeg?auto=compress&cs=tinysrgb&w=1600", zone: { top: "22%", left: "38%", width: "24%", height: "34%" } },
@@ -22,10 +25,12 @@ const ProductDetail = () => {
   const [activeImg, setActiveImg] = useState(0);
   const [showRoom, setShowRoom] = useState(false);
   const [roomIdx, setRoomIdx] = useState(0);
+  const [restockEmail, setRestockEmail] = useState("");
   const { addToCart, toggleWishlist, isWishlisted } = useCart();
+  const { user } = useAuth();
 
   useEffect(() => {
-    setQty(1); setActiveImg(0);
+    setQty(1); setActiveImg(0); setRestockEmail(user?.email || "");
     api.get(`/products/${slug}`).then((r) => {
       setProduct(r.data);
       api.get(`/products?category=${r.data.category_slug}&limit=8`).then((rr) => {
@@ -33,11 +38,12 @@ const ProductDetail = () => {
       });
     }).catch(() => setProduct(null));
     window.scrollTo({ top: 0, behavior: "smooth" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
   if (!product) return <div className="min-h-[60vh] flex items-center justify-center font-display uppercase tracking-widest">Loading…</div>;
 
-  const images = [product.images?.[0], product.lifestyle_image, ...(product.images?.slice(1) || [])].filter(Boolean);
+  const images = [product.images?.[0], product.lifestyle_image, ...(product.images?.slice(1) || [])].filter(Boolean).map(resolveMedia);
   const outOfStock = (product.stock_quantity ?? 0) <= 0;
   const lowStock = !outOfStock && (product.stock_quantity ?? 0) < 5;
   const room = ROOM_TEMPLATES[roomIdx];
@@ -138,22 +144,41 @@ const ProductDetail = () => {
 
           {/* Qty + CTA */}
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <div className="inline-flex items-center border border-black">
-              <button data-testid="pdp-qty-dec" onClick={() => setQty(Math.max(1, qty - 1))} className="p-3 hover:bg-neutral-100"><Minus className="w-4 h-4" /></button>
-              <span className="px-4 font-tabular font-bold">{qty}</span>
-              <button data-testid="pdp-qty-inc" onClick={() => setQty(qty + 1)} className="p-3 hover:bg-neutral-100"><Plus className="w-4 h-4" /></button>
-            </div>
-            <button
-              data-testid="pdp-add-to-cart"
-              disabled={outOfStock}
-              onClick={(e) => {
-                const r = e.currentTarget.getBoundingClientRect();
-                addToCart(product, qty, { x: r.left + 40, y: r.top + 20 });
-              }}
-              className="pl-btn pl-btn-primary flex-1 min-w-[200px] disabled:bg-neutral-400"
-            >
-              <ShoppingBag className="w-4 h-4" /> Add to Bag · {formatINR(product.final_price * qty)}
-            </button>
+            {!outOfStock && (
+              <>
+                <div className="inline-flex items-center border border-black">
+                  <button data-testid="pdp-qty-dec" onClick={() => setQty(Math.max(1, qty - 1))} className="p-3 hover:bg-neutral-100"><Minus className="w-4 h-4" /></button>
+                  <span className="px-4 font-tabular font-bold">{qty}</span>
+                  <button data-testid="pdp-qty-inc" onClick={() => setQty(qty + 1)} className="p-3 hover:bg-neutral-100"><Plus className="w-4 h-4" /></button>
+                </div>
+                <button
+                  data-testid="pdp-add-to-cart"
+                  onClick={(e) => {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    addToCart(product, qty, { x: r.left + 40, y: r.top + 20 });
+                  }}
+                  className="pl-btn pl-btn-primary flex-1 min-w-[200px]"
+                >
+                  <ShoppingBag className="w-4 h-4" /> Add to Bag · {formatINR(product.final_price * qty)}
+                </button>
+              </>
+            )}
+            {outOfStock && (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  try {
+                    await api.post("/restock-alert", { email: restockEmail, product_id: product.id });
+                    toast.success("We'll email you the moment it's back.");
+                    setRestockEmail("");
+                  } catch { toast.error("Couldn't save. Try again."); }
+                }}
+                className="flex-1 min-w-[200px] flex gap-2"
+              >
+                <input type="email" required value={restockEmail} onChange={(e) => setRestockEmail(e.target.value)} placeholder="Notify me when back" className="flex-1 border border-black px-3 py-3 focus:outline-none" data-testid="restock-email" />
+                <button data-testid="restock-submit" className="pl-btn pl-btn-dark"><Bell className="w-4 h-4" /> Notify Me</button>
+              </form>
+            )}
             <button
               data-testid="pdp-wishlist"
               onClick={() => toggleWishlist(product)}

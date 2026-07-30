@@ -18,6 +18,7 @@ import About from "@/pages/About";
 import ComingSoon from "@/pages/ComingSoon";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import ForgotPassword from "@/pages/ForgotPassword";
 import Account from "@/pages/Account";
 import Wishlist from "@/pages/Wishlist";
 import Orders from "@/pages/Orders";
@@ -35,6 +36,10 @@ import AdminOrderDetail from "@/pages/admin/OrderDetail";
 import AdminCategories from "@/pages/admin/Categories";
 import AdminSettings from "@/pages/admin/Settings";
 import AdminCustomers from "@/pages/admin/Customers";
+import AdminDiscounts from "@/pages/admin/Discounts";
+import AdminActivity from "@/pages/admin/Activity";
+import AdminAnalytics from "@/pages/admin/Analytics";
+import AdminTestimonials from "@/pages/admin/Testimonials";
 
 const Shell = ({ settings, children }) => (
   <>
@@ -67,6 +72,7 @@ function App() {
               <Route path="/coming-soon" element={<Shell settings={settings}><ComingSoon /></Shell>} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
               <Route path="/account" element={<ProtectedRoute><Shell settings={settings}><Account /></Shell></ProtectedRoute>} />
               <Route path="/account/wishlist" element={<ProtectedRoute><Shell settings={settings}><Wishlist /></Shell></ProtectedRoute>} />
@@ -84,6 +90,10 @@ function App() {
                 <Route path="orders/:id" element={<AdminOrderDetail />} />
                 <Route path="categories" element={<AdminCategories />} />
                 <Route path="customers" element={<AdminCustomers />} />
+                <Route path="discounts" element={<AdminDiscounts />} />
+                <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="testimonials" element={<AdminTestimonials />} />
+                <Route path="activity" element={<AdminActivity />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 

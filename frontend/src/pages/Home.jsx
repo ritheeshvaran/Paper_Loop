@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowUpRight, Instagram } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { api } from "@/lib/api";
+import { resolveMedia } from "@/lib/media";
 import { ProductCard } from "@/components/ProductCard";
 import { FadeUp } from "@/components/Reveal";
+import { toast } from "sonner";
 
 const HeroCarousel = ({ images = [] }) => {
   const [idx, setIdx] = useState(0);
   useEffect(() => {
+    if (!images.length) return;
     const t = setInterval(() => setIdx((i) => (i + 1) % images.length), 5500);
     return () => clearInterval(t);
   }, [images.length]);
@@ -32,16 +35,66 @@ const HeroCarousel = ({ images = [] }) => {
   );
 };
 
+const Testimonials = ({ items }) => {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (!items.length) return;
+    const t = setInterval(() => setI((v) => (v + 1) % items.length), 6500);
+    return () => clearInterval(t);
+  }, [items.length]);
+  if (!items.length) return null;
+  const t = items[i];
+  return (
+    <div className="max-w-3xl mx-auto text-center">
+      <AnimatePresence mode="wait">
+        <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.5 }}>
+          <div className="flex justify-center gap-1 mb-4">{Array(t.rating || 5).fill(0).map((_, k) => <Star key={k} className="w-4 h-4 fill-[color:var(--pl-orange)] text-[color:var(--pl-orange)]" />)}</div>
+          <p className="font-display text-2xl md:text-3xl leading-tight">"{t.quote}"</p>
+          <div className="mt-6 text-[11px] uppercase tracking-widest text-white/60">— {t.name}{t.location ? ` · ${t.location}` : ""}</div>
+        </motion.div>
+      </AnimatePresence>
+      <div className="mt-8 flex items-center justify-center gap-6">
+        <button onClick={() => setI((v) => (v - 1 + items.length) % items.length)} className="p-2 border border-white/20 hover:border-[color:var(--pl-orange)] hover:text-[color:var(--pl-orange)]" aria-label="Previous"><ChevronLeft className="w-4 h-4" /></button>
+        <div className="flex gap-1">
+          {items.map((_, k) => <button key={k} onClick={() => setI(k)} className={`w-6 h-0.5 ${k === i ? "bg-[color:var(--pl-orange)]" : "bg-white/20"}`} aria-label={`Slide ${k + 1}`} />)}
+        </div>
+        <button onClick={() => setI((v) => (v + 1) % items.length)} className="p-2 border border-white/20 hover:border-[color:var(--pl-orange)] hover:text-[color:var(--pl-orange)]" aria-label="Next"><ChevronRight className="w-4 h-4" /></button>
+      </div>
+    </div>
+  );
+};
+
+const NewsletterForm = () => {
+  const [email, setEmail] = useState("");
+  const [done, setDone] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post("/newsletter/subscribe", { email, source: "home_footer" });
+      setDone(true); setEmail("");
+      toast.success("You're on the list.");
+    } catch { toast.error("Try again in a moment"); }
+  };
+  return (
+    <form onSubmit={submit} className="mt-10 max-w-md mx-auto flex border-b border-white/30 pb-3">
+      <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" className="flex-1 bg-transparent text-white placeholder-white/40 focus:outline-none px-2" data-testid="newsletter-email" />
+      <button data-testid="newsletter-submit" className="text-white uppercase tracking-widest text-xs font-bold hover:text-[color:var(--pl-orange)]">{done ? "Subscribed ✓" : "Subscribe →"}</button>
+    </form>
+  );
+};
+
 const Home = ({ settings }) => {
   const [best, setBest] = useState([]);
   const [trending, setTrending] = useState([]);
-  const [featured, setFeatured] = useState([]);
+  const [testimonials, setTestimonials] = useState([]);
+  const [gallery, setGallery] = useState([]);
   const [mouse, setMouse] = useState({ x: -100, y: -100 });
 
   useEffect(() => {
     api.get("/products?best_seller=true&limit=8").then((r) => setBest(r.data));
     api.get("/products?trending=true&limit=8").then((r) => setTrending(r.data));
-    api.get("/products?featured=true&limit=4").then((r) => setFeatured(r.data));
+    api.get("/testimonials").then((r) => setTestimonials(r.data));
+    api.get("/gallery").then((r) => setGallery(r.data));
   }, []);
 
   const heroImages = settings?.hero_images || [];
@@ -54,7 +107,6 @@ const Home = ({ settings }) => {
         className="relative min-h-[100vh] flex flex-col justify-end text-white overflow-hidden"
       >
         <HeroCarousel images={heroImages} />
-        {/* Mouse-follow glow */}
         <motion.div
           animate={{ x: mouse.x - 200, y: mouse.y - 200 }}
           transition={{ type: "spring", damping: 30, stiffness: 100 }}
@@ -63,12 +115,8 @@ const Home = ({ settings }) => {
         />
 
         <div className="pl-container relative z-10 pb-16 md:pb-24">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-[11px] tracking-[0.25em] uppercase text-[color:var(--pl-orange)] mb-6"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
+            className="text-[11px] tracking-[0.25em] uppercase text-[color:var(--pl-orange)] mb-6">
             ● New Drop Live
           </motion.div>
 
@@ -76,40 +124,29 @@ const Home = ({ settings }) => {
             {["Posters.", "Keychains.", "Your Style."].map((word, i) => (
               <span key={word} className="pl-mask block">
                 <motion.span
-                  initial={{ y: "110%" }}
-                  animate={{ y: "0%" }}
+                  initial={{ y: "110%" }} animate={{ y: "0%" }}
                   transition={{ duration: 1.0, delay: 0.5 + i * 0.15, ease: [0.16, 1, 0.3, 1] }}
                   style={{ display: "inline-block" }}
                   className={i === 2 ? "text-[color:var(--pl-orange)]" : ""}
-                >
-                  {word}
-                </motion.span>
+                >{word}</motion.span>
               </span>
             ))}
           </h1>
 
-          <motion.p
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.3, duration: 0.7 }}
-            className="mt-6 text-white/80 max-w-md text-base leading-relaxed"
-          >
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.3, duration: 0.7 }}
+            className="mt-6 text-white/80 max-w-md text-base leading-relaxed">
             Editorial wall art and pocket flex for the ones who curate their space with intent.
           </motion.p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.5, duration: 0.6 }}
-            className="mt-8 flex flex-wrap gap-3"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.5, duration: 0.6 }}
+            className="mt-8 flex flex-wrap gap-3">
             <Link to="/collections" data-testid="hero-shop-btn" className="pl-btn pl-btn-primary">Shop Posters <ArrowRight className="w-4 h-4" /></Link>
             <Link to="/collections/keychains" className="pl-btn pl-btn-ghost-dark">Explore Keychains</Link>
           </motion.div>
         </div>
 
-        {/* Scroll indicator */}
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }}
-          className="absolute bottom-6 right-6 md:right-12 z-10 hidden md:flex flex-col items-center gap-2 text-white/60"
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }}
+          className="absolute bottom-6 right-6 md:right-12 z-10 hidden md:flex flex-col items-center gap-2 text-white/60">
           <span className="text-[10px] tracking-widest uppercase">Scroll</span>
           <motion.div animate={{ y: [0, 10, 0] }} transition={{ repeat: Infinity, duration: 1.8 }} className="w-px h-8 bg-white/60" />
         </motion.div>
@@ -242,16 +279,54 @@ const Home = ({ settings }) => {
         </div>
       </section>
 
+      {/* GALLERY */}
+      {gallery.length > 0 && (
+        <section className="pl-section-gray py-24 md:py-32">
+          <div className="pl-container">
+            <FadeUp>
+              <div className="text-[11px] tracking-[0.25em] uppercase text-neutral-500 mb-4">05 · #PaperAndLoop</div>
+              <h2 className="font-display text-editorial uppercase mb-12">On real <br /><span className="text-[color:var(--pl-orange)]">walls.</span></h2>
+            </FadeUp>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+              {gallery.slice(0, 12).map((g, i) => (
+                <motion.a
+                  key={g.id}
+                  href={g.link_url || settings?.instagram_url || "#"}
+                  target="_blank" rel="noreferrer"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.05 }}
+                  className="group relative aspect-square overflow-hidden bg-neutral-200"
+                >
+                  <img src={resolveMedia(g.image_url)} alt={g.caption || ""} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors" />
+                </motion.a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* TESTIMONIALS */}
+      {testimonials.length > 0 && (
+        <section className="pl-section-dark py-24 md:py-32">
+          <div className="pl-container text-white">
+            <FadeUp>
+              <div className="text-center text-[11px] tracking-[0.25em] uppercase text-white/50 mb-4">06 · Word on the wall</div>
+              <Testimonials items={testimonials} />
+            </FadeUp>
+          </div>
+        </section>
+      )}
+
       {/* NEWSLETTER */}
-      <section className="pl-section-dark py-24 md:py-32">
+      <section className="pl-section-dark py-24 md:py-32 border-t border-white/10">
         <div className="pl-container text-center">
           <FadeUp>
             <div className="text-[11px] tracking-[0.25em] uppercase text-[color:var(--pl-orange)] mb-4">Drop Alerts</div>
             <h2 className="font-display text-editorial uppercase text-white max-w-3xl mx-auto">First to <br />know, <span className="text-[color:var(--pl-orange)]">first to own.</span></h2>
-            <form onSubmit={(e) => { e.preventDefault(); e.target.reset(); }} className="mt-10 max-w-md mx-auto flex border-b border-white/30 pb-3">
-              <input required type="email" placeholder="your@email.com" className="flex-1 bg-transparent text-white placeholder-white/40 focus:outline-none px-2" data-testid="newsletter-email" />
-              <button className="text-white uppercase tracking-widest text-xs font-bold hover:text-[color:var(--pl-orange)]">Subscribe →</button>
-            </form>
+            <NewsletterForm />
             <p className="mt-3 text-white/40 text-xs uppercase tracking-widest">No spam. Only drops.</p>
           </FadeUp>
         </div>

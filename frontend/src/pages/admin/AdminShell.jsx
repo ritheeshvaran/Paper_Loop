@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet, NavLink, Link, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, ShoppingCart, Tag, Users, Settings, LogOut, ExternalLink } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, Tag, Users, Settings, LogOut, ExternalLink, Percent, BarChart3, Quote, ScrollText } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const nav = [
@@ -8,7 +8,11 @@ const nav = [
   { to: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/categories", label: "Categories", icon: Tag },
+  { to: "/admin/discounts", label: "Discounts", icon: Percent },
   { to: "/admin/customers", label: "Customers", icon: Users },
+  { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/admin/testimonials", label: "Content", icon: Quote },
+  { to: "/admin/activity", label: "Activity", icon: ScrollText },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

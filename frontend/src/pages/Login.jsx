@@ -60,6 +60,9 @@ const Login = () => {
             </div>
             {error && <div data-testid="login-error" className="text-sm text-red-600">{error}</div>}
             <button data-testid="login-submit" disabled={busy} className="pl-btn pl-btn-primary w-full">{busy ? "Signing in…" : "Sign in"}</button>
+            <div className="text-right">
+              <Link to="/forgot-password" data-testid="link-forgot" className="text-xs uppercase tracking-widest font-bold text-neutral-500 hover:text-[color:var(--pl-orange)]">Forgot password?</Link>
+            </div>
           </form>
 
           <div className="mt-8 text-sm text-neutral-600">

@@ -13,6 +13,7 @@ const OrderDetail = () => {
   const [o, setO] = useState(null);
 
   const load = () => api.get(`/orders/${id}`).then((r) => setO(r.data));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [id]);
 
   const cancel = async () => {

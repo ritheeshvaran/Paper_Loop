@@ -1,0 +1,42 @@
+{
+  "summary": "Iteration 2 full-stack testing of Paper & Loop. Backend: 47/47 pytest cases pass (20 new + 27 regression) — covers OTP send/verify (registration+password_reset with dev_code fallback), register-with-otp_token → email_verified=true, reset-password (old fails / new works), newsletter idempotent subscribe, restock-alert persistence, testimonials & gallery seed + admin CRUD, discounts create-percent-on-product → product.final_price recomputes → delete restores 0%, activity log entries with admin_email/action_type/entity_id, analytics shape (all 9 keys incl. 14-entry revenue_series), image upload (returns /api/uploads/<uuid>.png, GET returns bytes, rejects non-image, requires admin). Frontend: verified /register 3-step wizard (email → OTP inputs auto-advance → details → /account), /forgot-password 3-step reset ending at /login with old pw rejected + new pw accepted, Home newsletter subscribe (SUBSCRIBED confirmation), Home testimonials carousel autoplays, /admin/analytics renders area+pie+top-products+category bars (14 SVGs), /admin/testimonials seed list + gallery grid, /admin/discounts form, /admin/activity, /admin/products all load with zero JS errors. CI=true yarn build succeeds, zero warnings, 284KB gzipped bundle.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/admin/discounts", "issues": ["Starts/Ends date fields use browser-native input type=datetime-local (mm/dd/yyyy, --:-- --) instead of the shadcn Calendar/Popover component used elsewhere. Recommend swapping to <Calendar> for visual consistency."]},
+      {"screen": "/admin/testimonials (Gallery grid)", "issues": ["One of the six seeded gallery tiles (bottom-right) renders as a blank/broken image — the seeded image URL 404s. Replace seed URL in seed_if_empty()."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_iteration2.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "(Design) Replace HTML datetime-local pickers in admin Discounts page with shadcn Calendar for consistency.",
+    "(Content) Fix broken seeded gallery image URL — one of the 6 seeded tiles renders blank on Home and in /admin/testimonials gallery grid.",
+    "(Bug — latent) DELETE /admin/discounts with applies_to='all' unconditionally resets discount_percent=0 on every product, even when the discount was is_active=False and never applied. Recommend deleting only when discount was actually applied (or storing 'applied' state). Caused test flakiness that Tokyo Nights lost its seeded 15% during testing.",
+    "(Code) /admin/upload writes the file to disk BEFORE the 8MB size check — a malicious client could still fill /tmp. Move size check to before f.write().",
+    "(Code) server.py is now 1213 lines — starting to warrant a split into routers/{auth,products,orders,admin,content}.py."
+  ],
+  "critical_code_review_comments": [
+    "OTP flow correctly rate-limits (5/10min) and hashes the code with bcrypt — good.",
+    "otp_token is a 10-min JWT bound to email+purpose; register/reset re-verify — solid.",
+    "Delete-of-all-discount side-effect (see action_items) can wipe legitimate per-product discounts.",
+    "APP_ENV=development gates dev_code exposure — production path is safe as long as APP_ENV is not 'development'. Add assertion at startup that APP_ENV is set explicitly.",
+    "Upload endpoint accepts any file starting with content_type image/* — could still be spoofed. Consider PIL.Image.verify() for extra defence.",
+    "Static uploads mounted at /api/uploads served by StaticFiles — no auth (correct for public product images), but no cache-control headers set."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration2.py (new — 20 iteration-2 tests)"
+  ],
+  "success_rate": {"backend": "100% (47/47)", "frontend": "100% on flows executed"},
+  "test_credentials": "Admin ritheeshvaran2007@gmail.com/admin123, Demo demo@paperandloop.com/demo1234 — both working. Tokyo Nights discount_percent was restored to 15% during testing.",
+  "seed_data_creation": "Tests created several TEST_ users, one TEST_ product (cleaned), transient TEST_ testimonial + gallery + discounts (all deleted). Newsletter & restock_alerts collections received ~2 TEST_ entries (harmless).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend regression = /app/backend/tests/backend_test.py + /app/backend/tests/test_iteration2.py (47 total). Run: `REACT_APP_BACKEND_URL=<url> pytest /app/backend/tests/ -v`. OTP dev_code fallback only fires when APP_ENV=development AND no Resend key — do NOT rely on it in prod tests. If TestProducts::test_get_by_slug_computed fails, run the curl in this iteration's transcript to restore Tokyo Nights' 15% discount (seed only runs on empty collection).",
+  "rca of the issue": "N/A — no bugs blocking, only 3 improvement items above."
+}
