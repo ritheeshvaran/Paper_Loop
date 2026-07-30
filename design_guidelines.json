@@ -1,0 +1,161 @@
+{
+  "brand": {
+    "name": "Paper & Loop",
+    "positioning": "Nike/Nothing/Apple of poster-and-keychain culture",
+    "target_audience": "15-30 y/o, mobile-first, scroll-native (Gen Z / anime fans, gamers, car enthusiasts, collectors).",
+    "voice": "confident, drop-culture, editorial"
+  },
+  "colors": {
+    "primary": {
+      "name": "Brand Orange",
+      "hex": "#FF6A00",
+      "usage": "accent only (≤10% viewport) - buttons, cursors, badges, highlight lines"
+    },
+    "backgrounds": {
+      "dark": "#0A0A0A",
+      "light": "#F1F1EF",
+      "off_white": "#FAFAF9",
+      "surface_dark": "#151515"
+    },
+    "text": {
+      "primary_on_light": "#0A0A0A",
+      "secondary_on_light": "#666666",
+      "primary_on_dark": "#FAFAF9",
+      "secondary_on_dark": "#999999"
+    },
+    "theme_strategy": "Alternating sections dark→light→dark for scroll rhythm."
+  },
+  "typography": {
+    "primary_font": "Cabinet Grotesk",
+    "secondary_font": "Satoshi",
+    "fallback_fonts": "sans-serif",
+    "heading_style": {
+      "font": "'Cabinet Grotesk', sans-serif",
+      "weight": "800",
+      "letter_spacing": "tracking-tighter",
+      "text_transform": "uppercase"
+    },
+    "body_style": {
+      "font": "'Satoshi', sans-serif",
+      "weight": "400",
+      "letter_spacing": "tracking-normal",
+      "line_height": "leading-relaxed"
+    },
+    "scale": {
+      "hero": "clamp(2.75rem, 6vw + 1rem, 7rem)",
+      "h1": "text-5xl md:text-6xl+",
+      "h2": "text-4xl md:text-5xl",
+      "h3": "text-2xl md:text-3xl",
+      "body": "text-base md:text-lg",
+      "small": "text-sm tracking-widest uppercase font-bold"
+    }
+  },
+  "spacing_and_layout": {
+    "container": "max-w-7xl mx-auto px-6 md:px-12",
+    "section_padding": "py-24 md:py-32",
+    "grid": {
+      "desktop": "grid-cols-12 gap-6",
+      "product_desktop": "grid-cols-4 gap-6",
+      "product_tablet": "grid-cols-3 gap-4",
+      "product_mobile": "grid-cols-2 gap-3"
+    },
+    "borders": "1px solid border-black/10 (light mode) or border-white/10 (dark mode)",
+    "radii": "rounded-none or rounded-sm (sharp, premium editorial feel, max 4px)"
+  },
+  "motion_and_interactions": {
+    "hero_reveal": "staggered fade-up with framer-motion (delay: 0.1s steps)",
+    "heading_reveal": "line-mask reveal (overflow-hidden, y: '100%' to 0)",
+    "floating_cards": "±6px oscillation on Y-axis (repeat: infinity, duration: 4s, ease: easeInOut)",
+    "cursor": "custom cursor (dot + trailing ring), cursor-follow orange glow. Native cursor hidden.",
+    "hover_effects": "product card image swap (flat poster -> lifestyle context), 3D tilt (react-parallax-tilt or framer-motion), magnetic buttons.",
+    "cart_animation": "fly-to-cart arc animation using Framer Motion layoutId or explicit coordinates.",
+    "price_change": "digit-roll animation (framer-motion AnimatePresence mode='popLayout')",
+    "order_timeline": "animated progress bar with glowing active states and staggered step reveals."
+  },
+  "components": {
+    "product_card": {
+      "layout": "aspect-[3/4] relative overflow-hidden group bg-gray-100 dark:bg-zinc-900",
+      "image": "default image is flat poster. On hover: crossfade to lifestyle/room image.",
+      "badges": "absolute top-4 left-4 flex flex-col gap-2 (New, Trending, Limited) - crisp typography, sharp corners, bg-[#FF6A00] text-white px-2 py-1 text-xs font-bold uppercase tracking-wider",
+      "actions": "Quick View, Wishlist, Add to Cart appearing on hover (translate-y-0 from translate-y-4, opacity-100 from 0).",
+      "interaction": "3D tilt effect on mouse move."
+    },
+    "hero_section": {
+      "layout": "min-h-[90vh] flex flex-col justify-end pb-12 relative overflow-hidden",
+      "background": "cinematic cross-fading banner rotation",
+      "overlay": "bg-black/40 to ensure text readability",
+      "typography": "massive clamp() heading, bottom-aligned",
+      "cta": "magnetic button, primary brand orange #FF6A00, sharp rect shape px-8 py-4 text-white font-bold tracking-widest uppercase"
+    },
+    "navigation": {
+      "style": "sticky top-0 z-50 glassmorphic (backdrop-blur-xl bg-white/70 dark:bg-black/60) with 1px bottom border border-white/10.",
+      "layout": "Logo left, Links center, Icons right (Search, User, Cart). Mobile: Bottom tab bar for core nav, sticky add-to-cart on PDP."
+    },
+    "cart_drawer": {
+      "style": "slide-out from right (framer-motion x: '100%' to 0). Dark overlay background.",
+      "content": "Fly-to-cart animation destination. Displays items, subtotal with digit-roll, and massive Checkout button."
+    },
+    "room_preview": {
+      "style": "PDP specific tool. Split screen or modal.",
+      "function": "Composite the selected poster design onto a real bedroom/gaming setup mockup (using a fixed base image and overlaying the poster image in a specific div with absolute positioning and perspective)."
+    },
+    "checkout_gpay": {
+      "style": "Review -> QR Code display -> Confirmation.",
+      "interactions": "Mocking the payment verification with a loading spinner -> Success state."
+    }
+  },
+  "page_layouts": {
+    "home": "Hero -> Featured Collections (marquee or horizontal scroll) -> Best Sellers (4-up grid) -> Trending -> Coming Soon (T-shirts/Hoodies teaser) -> Why Choose Us (bento grid) -> Instagram Gallery (masonry) -> Testimonials -> Newsletter -> Footer",
+    "collections": "Sticky filters on left + category chips top -> Product Grid",
+    "pdp": "Split screen desktop: Sticky purchase card on right (price, variants, add to cart), scrollable gallery on left. Room Preview button. Related products below.",
+    "admin_dashboard": "Sidebar navigation (sharp edges). Data dense tables. Stats cards. Order timeline management."
+  },
+  "media_and_assets": {
+    "logo_url": "https://customer-assets-eiarnc6j.emergentagent.net/job_d140b9e1-cf47-4cc2-ae45-11f2538d2dd6/artifacts/ng4o1n3u_image.png",
+    "images": {
+      "room_setups": [
+        "https://images.pexels.com/photos/33050959/pexels-photo-33050959.jpeg",
+        "https://images.pexels.com/photos/36907020/pexels-photo-36907020.jpeg"
+      ],
+      "car_posters": [
+        "https://images.pexels.com/photos/16335705/pexels-photo-16335705.jpeg",
+        "https://images.pexels.com/photos/5322558/pexels-photo-5322558.jpeg",
+        "https://images.unsplash.com/photo-1604705528621-81b2755a320b"
+      ],
+      "streetwear_lifestyle": [
+        "https://images.unsplash.com/photo-1523585298601-d46ae038d7d3",
+        "https://images.pexels.com/photos/32969128/pexels-photo-32969128.jpeg",
+        "https://images.unsplash.com/photo-1586670926282-e5fc05bf15c3"
+      ]
+    }
+  },
+  "accessibility": {
+    "contrast": "Ensure text over images has background overlays or text-shadows. Orange #FF6A00 on white needs large text or careful contrast checking.",
+    "motion": "Respect prefers-reduced-motion: reduce for heavy 3D and floating animations."
+  },
+  "instructions_to_main_agent": [
+    "Use framer-motion heavily for all UI interactions: hero staggered reveals, line-masks, floating cards, magnetic buttons, and page transitions.",
+    "Implement a custom cursor component that tracks mouse position globally and adds an orange glow effect.",
+    "For the Room Preview feature, create a container with the room setup image as background, and absolute position the poster image on the wall with appropriate box-shadow and perspective.",
+    "Keep typography tight and editorial. Do NOT use Inter or Roboto. Use 'Cabinet Grotesk', 'Satoshi', or standard fallback like 'system-ui' but stylized heavily. Import from Google Fonts or local assets if possible, else rely on close fallbacks.",
+    "Alternate section backgrounds between #0A0A0A (Dark) and #F1F1EF / #FAFAF9 (Light) for strong scroll rhythm.",
+    "Mobile layout MUST use a bottom tab bar and sticky Add to Cart on PDP.",
+    "Build the GPay QR checkout flow as a simulated multi-step process with a fake verification delay."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "You MUST NOT apply universal transition. Eg: transition: all. Always add transitions for specific interactive elements.",
+    "You MUST NOT center align the app container. No .App { text-align: center; }.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style.",
+    "NEVER use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 etc for icons. Use standard icon libraries like lucide-react or @phosphor-icons/react.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states.",
+    "All interactive and key informational elements MUST include a data-testid attribute.",
+    "Use sonner for toasts from /app/frontend/src/components/ui/sonner.js",
+    "Do not use complete transparent background in header or overlays. Ensure text is readable."
+  ]
+}
