@@ -1,34 +1,56 @@
 # Paper & Loop — PRD
 
 ## Original Problem Statement
-Build paperandloop.com — a premium youth merchandise brand (Posters + Keychains) targeting 15-30 y/o Gen Z. Editorial, minimal, "Nike/Nothing/Apple" of poster culture. Full spec provided by user with color system, typography (Cabinet Grotesk + Satoshi), motion inventory, page-by-page layouts, and admin dashboard.
+Build paperandloop.com — a premium youth merchandise brand (Posters + Keychains). Editorial, minimal, "Nike/Nothing/Apple" of poster culture. Complete spec provided including color system, typography, motion, page-by-page layouts and admin dashboard.
 
 ## Stack (as built)
 - Backend: FastAPI + MongoDB (motor)
-- Frontend: React 19 + React Router 7 + Framer Motion + Tailwind + shadcn/ui + sonner + lucide-react
-- Auth: JWT (email+password, bcrypt), stored in localStorage as `pl_token`
-- Payments: Manual GPay QR + Transaction ID (per spec §5.12)
+- Frontend: React 19 + React Router 7 + Framer Motion + Tailwind + shadcn/ui + Recharts + sonner + lucide
+- Auth: JWT (email+password, bcrypt) + real email OTP for registration & password reset (Resend-ready with dev-code fallback)
+- Payments: Manual GPay QR + Transaction ID
+- Media: File upload to /app/backend/uploads, served via /api/uploads/*
 
 ## Personas
-- Customer (15-30 y/o Gen Z): mobile-first, drop-culture; browses without login, signs in at checkout.
-- Admin (single super-admin `ritheeshvaran2007@gmail.com`; multi-admin future-ready via role field).
+- Customer (15-30 Gen Z) — browses without login; signs in at checkout.
+- Admin (`ritheeshvaran2007@gmail.com`) — full CRUD via /admin/*
 
 ## Implemented (2026-02)
-- Customer: Home (cinematic hero, marquee, collections, best-sellers, trending, coming-soon, why, newsletter), Collections (category chips + sort + banner), PDP (gallery + specs + qty + add-to-cart + wishlist + Room Preview compositor with 3 room templates + related products), Search overlay, About, Coming Soon, Cart drawer with fly-to-cart animation, Login/Register, Account (editable profile), Wishlist, Orders list + detail with animated timeline, 3-step Checkout (review → GPay QR → confirmation), Custom cursor (desktop), Glassmorphic sticky nav, Mobile hamburger menu.
-- Admin: Sidebar shell, Dashboard (KPIs + top products), Orders (list + detail + forward-only status advance + delivery date), Products (list + create/edit/delete modal), Categories, Customers, Settings (announcement, QR, contact, hero images).
-- Backend: 30+ REST endpoints; state machine enforced; stock reservation on checkout + restoration on cancel; discounts computed server-side; activity log for admin status changes.
+### Customer
+- Home: cinematic hero carousel, marquee, editorial collection tiles, best sellers, trending, coming soon, why-choose-us, real gallery, testimonials carousel, real newsletter subscribe
+- Collections + category chips + sort + banner
+- PDP: gallery + specs + qty + add-to-cart + wishlist + **Room Preview** (3 templates) + **Restock alert** for out-of-stock + related products
+- Cart drawer with fly-to-cart & digit-roll totals; search overlay; wishlist; account (editable profile); orders list + detail with animated timeline; 3-step Checkout → GPay QR → animated confirmation
+- **3-step OTP Registration** (email → 6-digit OTP → details)
+- **Forgot Password** flow (email → OTP → new password)
+- Custom desktop cursor; glass sticky nav; mobile hamburger menu; fully responsive at 375 / 768 / 1440
 
-## Deferred (P1/P2)
-- OTP email registration (currently plain JWT)
-- Instagram gallery, Testimonials carousel, Reviews/ratings
-- Bundle "Complete the Look" cross-sell
-- Referral / share cards (OG image gen)
-- WhatsApp order status notifications
-- Restock alerts email fire
-- Scheduled discount auto-activation cron
-- Activity log UI (data captured; no viewer)
-- Product image upload (currently URLs only) + WebP transcoding
-- Multi-admin invitations UI
+### Admin
+- Sidebar shell, Dashboard KPIs + top products
+- Orders (search + filter + advance status + delivery date + timeline)
+- Products (CRUD + **image upload** + flags + visibility)
+- Categories (CRUD)
+- **Discounts** (percent/flat, targets product/category/all, scheduled window, apply/reset)
+- Customers (list + spend metrics)
+- **Analytics** (revenue area chart 14d + status pie + top products + category bars)
+- **Testimonials + Gallery** content management
+- **Activity Log** (all admin changes audited)
+- Settings (announcement, QR, contact, hero images)
+
+### Backend
+- 40+ REST endpoints, all `/api`-prefixed
+- Order state machine, forward-only, restock on cancel
+- OTP: bcrypt-hashed, 10-min JWT verification, 5/10min rate limit
+- Newsletter, restock-alerts, testimonials, gallery, discounts, activity_log collections
+- Fire-and-forget welcome + status-change emails
+- File upload with type + size validation
+- `CI=true yarn build` passes zero warnings, 284KB gzipped
 
 ## Test Credentials
 See `/app/memory/test_credentials.md`
+
+## Deferred (P2)
+- Real ESP configuration (RESEND_API_KEY env var — production path is ready)
+- WhatsApp order-status notifications
+- Referral / share-card OG image generation  
+- Multi-admin invitations UI
+- Product variants (T-shirts sizing) when apparel drops

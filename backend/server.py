@@ -546,10 +546,10 @@ async def upload_file(file: UploadFile = File(...), _: dict = Depends(require_ad
     ext = (file.filename or "img.jpg").rsplit(".", 1)[-1].lower()[:6]
     fname = f"{new_id()}.{ext}"
     dest = UPLOAD_DIR / fname
+    content = await file.read()
+    if len(content) > 8 * 1024 * 1024:
+        raise HTTPException(400, "File too large (max 8MB)")
     with dest.open("wb") as f:
-        content = await file.read()
-        if len(content) > 8 * 1024 * 1024:
-            raise HTTPException(400, "File too large (max 8MB)")
         f.write(content)
     # Public URL served through backend (/api/uploads/…)
     return {"url": f"/api/uploads/{fname}"}
@@ -892,12 +892,23 @@ async def create_discount(inp: DiscountInput, admin: dict = Depends(require_admi
 @api.delete("/admin/discounts/{did}")
 async def delete_discount(did: str, admin: dict = Depends(require_admin)):
     d = await db.discounts.find_one({"id": did})
-    if d and d.get("applies_to") == "product" and d.get("target_slug"):
-        await db.products.update_one({"slug": d["target_slug"]}, {"$set": {"discount_percent": 0}})
-    elif d and d.get("applies_to") == "category" and d.get("target_slug"):
-        await db.products.update_many({"category_slug": d["target_slug"]}, {"$set": {"discount_percent": 0}})
-    elif d and d.get("applies_to") == "all":
-        await db.products.update_many({}, {"$set": {"discount_percent": 0}})
+    # Only reset prices if this discount was actually active AND currently applied
+    if d and d.get("is_active"):
+        if d.get("applies_to") == "product" and d.get("target_slug"):
+            await db.products.update_one(
+                {"slug": d["target_slug"], "discount_percent": d.get("value")},
+                {"$set": {"discount_percent": 0}},
+            )
+        elif d.get("applies_to") == "category" and d.get("target_slug"):
+            await db.products.update_many(
+                {"category_slug": d["target_slug"], "discount_percent": d.get("value")},
+                {"$set": {"discount_percent": 0}},
+            )
+        elif d.get("applies_to") == "all":
+            await db.products.update_many(
+                {"discount_percent": d.get("value")},
+                {"$set": {"discount_percent": 0}},
+            )
     await db.discounts.delete_one({"id": did})
     if d: await _log(admin, "discount_deleted", "discount", did, d.get("name"), None)
     return {"ok": True}
@@ -1091,7 +1102,7 @@ async def seed_if_empty():
             "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800",
             "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800",
             "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800",
-            "https://images.unsplash.com/photo-1607081692251-b8b7fdd4f6ff?w=800",
+            "https://images.unsplash.com/photo-1522383225653-ed111181a951?w=800",
         ]
         for i, u in enumerate(seeds):
             await db.gallery_items.insert_one({
