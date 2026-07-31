@@ -101,7 +101,7 @@ const Shop = () => {
       </div>
 
       {/* Sticky filter bar */}
-      <div className="sticky top-16 md:top-20 z-30 pl-glass-light border-b border-neutral-200">
+      <div className="sticky top-14 md:top-[68px] z-30 pl-glass-light border-b border-neutral-200">
         <div className="pl-container py-4">
           {/* Type row */}
           <div className="flex items-center gap-2 overflow-x-auto">

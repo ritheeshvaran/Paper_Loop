@@ -227,6 +227,7 @@ class SetDeliveryDateInput(BaseModel):
 class SettingsUpdate(BaseModel):
     logo_url: Optional[str] = None
     hero_images: Optional[List[str]] = None
+    hero_background_url: Optional[str] = None
     gpay_qr_url: Optional[str] = None
     upi_id: Optional[str] = None
     announcement: Optional[str] = None
@@ -1111,6 +1112,8 @@ async def seed_if_empty():
             })
 
     if await db.products.count_documents({}) > 0: return
+    flags = await db.settings.find_one({"key": "seed_flags"})
+    if flags and flags.get("user_products_seeded"): return
 
     products_seed = [
         {"name": "Tokyo Nights", "category_slug": "anime", "price": 799, "discount_percent": 15,

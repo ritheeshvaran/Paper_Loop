@@ -54,12 +54,12 @@ export const Nav = ({ settings }) => {
         className="sticky top-0 z-50 border-b text-white"
         style={{ WebkitBackdropFilter: glass ? "blur(20px) saturate(180%)" : "none" }}
       >
-        <div className="pl-container flex items-center justify-between h-16 md:h-20">
+        <div className="pl-container flex items-center justify-between h-14 md:h-[68px]">
           <Link to="/" data-testid="nav-logo" className="flex items-center gap-2 shrink-0" data-cursor="Home">
             {settings?.logo_url ? (
-              <img src={resolveMedia(settings.logo_url)} alt="Paper & Loop" className="h-8 md:h-10 w-auto" />
+              <img src={resolveMedia(settings.logo_url)} alt="Paper & Loop" className="h-7 md:h-8 w-auto" />
             ) : (
-              <span className="font-display text-lg tracking-tight">Paper &amp; Loop</span>
+              <span className="font-display text-base tracking-tight">Paper &amp; Loop</span>
             )}
           </Link>
 

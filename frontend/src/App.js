@@ -80,7 +80,7 @@ function App() {
             <Toaster position="bottom-right" theme="dark" />
             <CustomCursor />
             <Routes>
-              <Route path="/" element={<Shell settings={settings}><Home /></Shell>} />
+              <Route path="/" element={<Shell settings={settings}><Home settings={settings} /></Shell>} />
               <Route path="/shop" element={<Shell settings={settings}><Shop /></Shell>} />
               <Route path="/collections" element={<Navigate to="/shop" replace />} />
               <Route path="/collections/:slug" element={<LegacyCollectionsRedirect />} />

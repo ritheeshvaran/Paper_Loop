@@ -65,9 +65,16 @@ class TestHealth:
         r = session.get(f"{API}/products")
         assert r.status_code == 200
         products = r.json()
-        assert len(products) >= 12
+        # Iteration 4: seed replaced with the 4 user-uploaded posters only
+        assert len(products) == 4
+        slugs = {p["slug"] for p in products}
+        assert slugs == {"spider-man", "tanjiro", "ferrari-formula-1", "vogue-leopard"}
         p = products[0]
         assert "final_price" in p and "has_discount" in p
+        # all images must be from the user's asset host
+        for prod in products:
+            assert prod["images"], f"{prod['slug']} missing images"
+            assert "customer-assets-jai6qajn.emergentagent.net" in prod["images"][0], prod["images"][0]
 
 
 # ─── Auth ─────────────────────────────────────────────────────────────────
@@ -152,7 +159,7 @@ class TestProducts:
         assert all(p.get("is_featured") for p in r.json())
 
     def test_search_q(self, session):
-        r = session.get(f"{API}/products", params={"q": "tokyo"})
+        r = session.get(f"{API}/products", params={"q": "spider"})
         assert r.status_code == 200
         assert len(r.json()) >= 1
 
@@ -167,12 +174,13 @@ class TestProducts:
         assert prices == sorted(prices, reverse=True)
 
     def test_get_by_slug_computed(self, session):
-        # Tokyo Nights has 15% discount
-        r = session.get(f"{API}/products/tokyo-nights")
+        # Iteration 4: verify final_price computation on one of the seeded posters
+        r = session.get(f"{API}/products/spider-man")
         assert r.status_code == 200
         p = r.json()
-        assert p["has_discount"] is True
-        assert p["final_price"] == round(p["price"] * (1 - p["discount_percent"] / 100), 2)
+        expected = round(p["price"] * (1 - p.get("discount_percent", 0) / 100), 2)
+        assert p["final_price"] == expected
+        assert p["has_discount"] == (p.get("discount_percent", 0) > 0)
 
 
 # ─── Cart flow ────────────────────────────────────────────────────────────
