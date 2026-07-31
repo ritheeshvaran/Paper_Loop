@@ -21,6 +21,16 @@ from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from starlette.middleware.cors import CORSMiddleware
+from seed_data import (
+    CATEGORIES,
+    GALLERY_FILENAMES,
+    PRODUCTS,
+    TESTIMONIALS,
+    copy_all_assets,
+    copy_asset,
+    default_settings,
+    upload_url,
+)
 
 
 # ─── Setup ──────────────────────────────────────────────────────────────────
@@ -931,22 +941,7 @@ async def admin_activity(_: dict = Depends(require_admin), limit: int = 100):
 
 # ─── Settings ───────────────────────────────────────────────────────────────
 def _default_settings() -> dict:
-    return {
-        "logo_url": "https://customer-assets-eiarnc6j.emergentagent.net/job_d140b9e1-cf47-4cc2-ae45-11f2538d2dd6/artifacts/ng4o1n3u_image.png",
-        "hero_images": [
-            "https://images.unsplash.com/photo-1604705528621-81b2755a320b?w=2000",
-            "https://images.unsplash.com/photo-1523585298601-d46ae038d7d3?w=2000",
-            "https://images.pexels.com/photos/33050959/pexels-photo-33050959.jpeg?auto=compress&cs=tinysrgb&w=2000",
-        ],
-        "gpay_qr_url": "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=upi://pay?pa=paperandloop@upi&pn=Paper%20%26%20Loop&cu=INR",
-        "upi_id": "paperandloop@upi",
-        "announcement": "New Drop — Tokyo Nights collection. Limited then gone.",
-        "instagram_url": "https://instagram.com/paperandloop",
-        "whatsapp_url": "https://wa.me/919999999999",
-        "contact_email": "hello@paperandloop.com",
-        "contact_phone": "+91 99999 99999",
-        "address": "Chennai, India",
-    }
+    return default_settings()
 
 
 async def _get_settings() -> dict:
@@ -1032,6 +1027,72 @@ async def admin_analytics(_: dict = Depends(require_admin)):
 
 
 # ─── Seed ───────────────────────────────────────────────────────────────────
+async def _seed_products_and_assets():
+    """Copy Images/ assets to uploads/ and insert real products."""
+    images_dir = ROOT_DIR.parent / "Images"
+    if not images_dir.exists():
+        log.warning("Images/ folder not found — skipping product seed")
+        return
+    try:
+        copy_all_assets()
+    except FileNotFoundError as e:
+        log.error("Asset copy failed: %s", e)
+        return
+
+    for i, (name, slug, banner_file) in enumerate(CATEGORIES):
+        banner = upload_url(banner_file)
+        existing = await db.categories.find_one({"slug": slug})
+        if not existing:
+            await db.categories.insert_one({
+                "id": new_id(), "name": name, "slug": slug,
+                "banner_image_url": banner, "sort_order": i, "created_at": now_iso(),
+            })
+        elif not existing.get("banner_image_url") or "unsplash" in (existing.get("banner_image_url") or ""):
+            await db.categories.update_one({"id": existing["id"]}, {"$set": {"banner_image_url": banner}})
+
+    await db.products.delete_many({})
+    for p in PRODUCTS:
+        url = upload_url(p["filename"])
+        doc = {
+            "id": new_id(), "slug": slugify(p["name"]), "name": p["name"],
+            "description": p["description"], "category_slug": p["category_slug"],
+            "price": p["price"], "discount_percent": p.get("discount_percent", 0),
+            "stock_quantity": p.get("stock_quantity", 25),
+            "images": [url], "lifestyle_image": url,
+            "material": p.get("material", "Premium 250gsm matte paper"),
+            "size": p.get("size", "A3 (11.7 x 16.5 in)"),
+            "finish": p.get("finish", "Matte, museum-grade ink"),
+            "is_featured": p.get("is_featured", False),
+            "is_trending": p.get("is_trending", False),
+            "is_best_seller": p.get("is_best_seller", False),
+            "is_new": p.get("is_new", False),
+            "is_limited": p.get("is_limited", False),
+            "visibility": "published",
+            "created_at": now_iso(), "updated_at": now_iso(),
+        }
+        await db.products.insert_one(doc)
+    log.info("Seeded %d products from Images/", len(PRODUCTS))
+
+    # Refresh site settings with local brand assets
+    defaults = default_settings()
+    await db.settings.update_one({"key": "site"}, {"$set": defaults}, upsert=True)
+
+    if await db.gallery_items.count_documents({}) == 0:
+        for i, fname in enumerate(GALLERY_FILENAMES):
+            await db.gallery_items.insert_one({
+                "id": new_id(), "image_url": upload_url(fname), "caption": "", "link_url": "",
+                "sort_order": i, "created_at": now_iso(),
+            })
+    else:
+        # Replace any stock gallery URLs with local product images
+        gallery = await db.gallery_items.find({}, {"_id": 0}).sort("sort_order", 1).to_list(60)
+        for i, g in enumerate(gallery):
+            url = g.get("image_url") or ""
+            if "unsplash" in url or "pexels" in url or "emergent" in url:
+                fname = GALLERY_FILENAMES[i % len(GALLERY_FILENAMES)]
+                await db.gallery_items.update_one({"id": g["id"]}, {"$set": {"image_url": upload_url(fname)}})
+
+
 async def seed_if_empty():
     admin_email = "ritheeshvaran2007@gmail.com"
     if not await db.users.find_one({"email": admin_email}):
@@ -1062,141 +1123,59 @@ async def seed_if_empty():
 
     await _get_settings()
 
-    categories_seed = [
-        ("Anime", "anime", "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1600"),
-        ("Cars", "cars", "https://images.unsplash.com/photo-1604705528621-81b2755a320b?w=1600"),
-        ("Sports", "sports", "https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?w=1600"),
-        ("Movies", "movies", "https://images.unsplash.com/photo-1489599162718-9b8b0e30dcc6?w=1600"),
-        ("Music", "music", "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1600"),
-        ("Gaming", "gaming", "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600"),
-        ("Motivational", "motivational", "https://images.unsplash.com/photo-1519834785169-98be25ec3f84?w=1600"),
-        ("Keychains", "keychains", "https://images.unsplash.com/photo-1607081692251-b8b7fdd4f6ff?w=1600"),
-    ]
-    for i, (name, slug, banner) in enumerate(categories_seed):
-        if not await db.categories.find_one({"slug": slug}):
-            await db.categories.insert_one({
-                "id": new_id(), "name": name, "slug": slug,
-                "banner_image_url": banner, "sort_order": i, "created_at": now_iso(),
-            })
-
     if await db.testimonials.count_documents({}) == 0:
-        for t in [
-            {"name": "Aarav K.", "location": "Bengaluru", "rating": 5,
-             "quote": "Ordered the Midnight GT-R. It's on my wall and every friend who walks in asks where I got it. Print quality is next level.",
-             "photo_url": ""},
-            {"name": "Priya S.", "location": "Mumbai", "rating": 5,
-             "quote": "The Sakura Riot poster is exactly what my room needed. Fast delivery, thick matte paper — not cheap glossy stuff.",
-             "photo_url": ""},
-            {"name": "Rohan D.", "location": "Delhi", "rating": 5,
-             "quote": "Bought two posters and a JDM keychain. Packaging alone felt like unboxing a premium drop.",
-             "photo_url": ""},
-            {"name": "Ishani M.", "location": "Chennai", "rating": 5,
-             "quote": "Their curation is unmatched. Every drop has a specific mood — you can tell they actually care.",
-             "photo_url": ""},
-        ]:
+        for t in TESTIMONIALS:
             await db.testimonials.insert_one({"id": new_id(), **t, "created_at": now_iso()})
 
-    if await db.gallery_items.count_documents({}) == 0:
-        seeds = [
-            "https://images.unsplash.com/photo-1554797589-7241bb691973?w=800",
-            "https://images.unsplash.com/photo-1600661653561-629509216228?w=800",
-            "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800",
-            "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800",
-            "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800",
-            "https://images.unsplash.com/photo-1522383225653-ed111181a951?w=800",
-        ]
-        for i, u in enumerate(seeds):
-            await db.gallery_items.insert_one({
-                "id": new_id(), "image_url": u, "caption": "", "link_url": "",
-                "sort_order": i, "created_at": now_iso(),
-            })
+    if await db.products.count_documents({}) == 0:
+        await _seed_products_and_assets()
+    else:
+        # Upgrade existing DBs that still have placeholder URLs
+        sample = await db.products.find_one({}, {"_id": 0, "images": 1})
+        if sample and sample.get("images") and any(
+            "unsplash" in u or "pexels" in u for u in sample["images"]
+        ):
+            await _seed_products_and_assets()
+        else:
+            s = await db.settings.find_one({"key": "site"})
+            if s and (
+                "unsplash" in (s.get("hero_background_url") or "")
+                or "emergent" in (s.get("hero_background_url") or "")
+                or any("unsplash" in u for u in (s.get("hero_images") or []))
+            ):
+                try:
+                    copy_all_assets()
+                except FileNotFoundError:
+                    pass
+                await db.settings.update_one({"key": "site"}, {"$set": default_settings()}, upsert=True)
 
-    if await db.products.count_documents({}) > 0: return
-    flags = await db.settings.find_one({"key": "seed_flags"})
-    if flags and flags.get("user_products_seeded"): return
+    await _ensure_brand_assets()
 
-    products_seed = [
-        {"name": "Tokyo Nights", "category_slug": "anime", "price": 799, "discount_percent": 15,
-         "description": "Neon-soaked skyline framed in editorial ink. Panels off the page, onto your wall.",
-         "images": ["https://images.unsplash.com/photo-1554797589-7241bb691973?w=1200"],
-         "lifestyle_image": "https://images.unsplash.com/photo-1526289034009-0240ddb68ce3?w=1200",
-         "is_featured": True, "is_best_seller": True, "is_new": True},
-        {"name": "Sakura Riot", "category_slug": "anime", "price": 699,
-         "description": "Cherry blossoms in a color palette that refuses to whisper.",
-         "images": ["https://images.unsplash.com/photo-1522383225653-ed111181a951?w=1200"],
-         "lifestyle_image": "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1200",
-         "is_trending": True, "is_new": True},
-        {"name": "Midnight GT-R", "category_slug": "cars", "price": 899, "discount_percent": 10,
-         "description": "JDM icon shot in low-key lighting. Torque, framed.",
-         "images": ["https://images.unsplash.com/photo-1600661653561-629509216228?w=1200"],
-         "lifestyle_image": "https://images.pexels.com/photos/16335705/pexels-photo-16335705.jpeg",
-         "is_featured": True, "is_best_seller": True},
-        {"name": "Autobahn Ghost", "category_slug": "cars", "price": 849,
-         "description": "Long exposure, longer story. A car that only exists at 3AM.",
-         "images": ["https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1200"],
-         "lifestyle_image": "https://images.pexels.com/photos/5322558/pexels-photo-5322558.jpeg",
-         "is_trending": True},
-        {"name": "Court Kings", "category_slug": "sports", "price": 749,
-         "description": "Hardwood culture in monochrome. For the ones who stayed late.",
-         "images": ["https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200"],
-         "lifestyle_image": "https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?w=1200",
-         "is_new": True},
-        {"name": "Grid Position", "category_slug": "sports", "price": 799, "discount_percent": 20,
-         "description": "F1-inspired minimalism. Pole position energy on paper.",
-         "images": ["https://images.unsplash.com/photo-1541773367336-d3f5ed7cb37e?w=1200"],
-         "lifestyle_image": "https://images.unsplash.com/photo-1541773367336-d3f5ed7cb37e?w=1200",
-         "is_limited": True},
-        {"name": "Reel Static", "category_slug": "movies", "price": 699,
-         "description": "A love letter to celluloid grain and neon marquees.",
-         "images": ["https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=1200"],
-         "lifestyle_image": "https://images.unsplash.com/photo-1489599162718-9b8b0e30dcc6?w=1200",
-         "is_featured": True},
-        {"name": "808 Cathedral", "category_slug": "music", "price": 749,
-         "description": "Bass, cathedral ceilings, and one perfect kick drum.",
-         "images": ["https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200"],
-         "lifestyle_image": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200",
-         "is_trending": True, "is_new": True},
-        {"name": "Frame Rate", "category_slug": "gaming", "price": 799, "discount_percent": 10,
-         "description": "Ultrawide dreams and RGB nightmares. Made for the setup.",
-         "images": ["https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200"],
-         "lifestyle_image": "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=1200",
-         "is_best_seller": True},
-        {"name": "No Days Off", "category_slug": "motivational", "price": 599,
-         "description": "Ink on paper. Cliché-free version of the phrase you're already living.",
-         "images": ["https://images.unsplash.com/photo-1519834785169-98be25ec3f84?w=1200"],
-         "lifestyle_image": "https://images.unsplash.com/photo-1493723843671-1d655e66ac1c?w=1200",
-         "is_new": True},
-        {"name": "JDM Kanji Keychain", "category_slug": "keychains", "price": 349, "discount_percent": 10,
-         "description": "Enamel + brass. Small pocket flex, big personality.",
-         "material": "Enamel-finished brass", "size": "45mm x 15mm", "finish": "Polished",
-         "images": ["https://images.unsplash.com/photo-1607081692251-b8b7fdd4f6ff?w=1200"],
-         "lifestyle_image": "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=1200",
-         "is_featured": True, "is_best_seller": True, "is_limited": True},
-        {"name": "Anime Chibi Loop", "category_slug": "keychains", "price": 299,
-         "description": "Miniature panel art on a keyring. Under-the-radar drop.",
-         "material": "Acrylic + steel loop", "size": "50mm", "finish": "Double-sided print",
-         "images": ["https://images.unsplash.com/photo-1580618432485-1e2f26bfd5e6?w=1200"],
-         "lifestyle_image": "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=1200",
-         "is_trending": True, "is_new": True},
-    ]
-    for p in products_seed:
-        doc = {
-            "id": new_id(), "slug": slugify(p["name"]), "name": p["name"],
-            "description": p["description"], "category_slug": p["category_slug"],
-            "price": p["price"], "discount_percent": p.get("discount_percent", 0),
-            "stock_quantity": p.get("stock_quantity", 25),
-            "images": p["images"], "lifestyle_image": p.get("lifestyle_image"),
-            "material": p.get("material", "Premium 250gsm matte paper"),
-            "size": p.get("size", "A3 (11.7 x 16.5 in)"),
-            "finish": p.get("finish", "Matte, museum-grade ink"),
-            "is_featured": p.get("is_featured", False), "is_trending": p.get("is_trending", False),
-            "is_best_seller": p.get("is_best_seller", False),
-            "is_new": p.get("is_new", False), "is_limited": p.get("is_limited", False),
-            "visibility": "published",
-            "created_at": now_iso(), "updated_at": now_iso(),
-        }
-        await db.products.insert_one(doc)
-    log.info("Seeded %d products", len(products_seed))
+
+async def _ensure_brand_assets():
+    """Sync hero image from Images/Hero and strip legacy Emergent branding from settings."""
+    hero_src = ROOT_DIR.parent / "Images" / "Hero" / "hero-background.png"
+    if not hero_src.exists():
+        return
+    try:
+        copy_asset("Hero/hero-background.png", "hero-background.png")
+    except FileNotFoundError:
+        return
+    s = await db.settings.find_one({"key": "site"}) or {}
+    patch: dict = {}
+    hero = upload_url("hero-background.png")
+    if s.get("hero_background_url") != hero:
+        patch["hero_background_url"] = hero
+        patch["hero_images"] = default_settings()["hero_images"]
+    logo = s.get("logo_url") or ""
+    if logo and re.search(r"emergent|unsplash|pexels", logo, re.I):
+        patch["logo_url"] = ""
+    ann = s.get("announcement") or ""
+    if "Tokyo Nights" in ann or not ann:
+        patch["announcement"] = default_settings()["announcement"]
+    if patch:
+        await db.settings.update_one({"key": "site"}, {"$set": patch}, upsert=True)
+        log.info("Updated brand assets: %s", list(patch.keys()))
 
 
 @app.on_event("startup")

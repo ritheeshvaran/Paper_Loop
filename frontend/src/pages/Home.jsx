@@ -4,30 +4,31 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { ArrowRight, ArrowUpRight, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { resolveMedia } from "@/lib/media";
+import { brandAsset } from "@/lib/assets";
 import { ProductCard } from "@/components/ProductCard";
 import { FadeUp } from "@/components/Reveal";
 import { toast } from "sonner";
 
 /* ── Cinematic Hero ────────────────────────────────────────────────────── */
-const Hero = ({ heroBg }) => {
+const Hero = ({ heroBg, navOffset = 104 }) => {
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 600], [0, 120]);
-  const overlay = useTransform(scrollY, [0, 400], [0.28, 0.55]);
+  const overlay = useTransform(scrollY, [0, 400], [0.32, 0.58]);
   const contentY = useTransform(scrollY, [0, 400], [0, -60]);
   const contentOpacity = useTransform(scrollY, [0, 400], [1, 0]);
 
   return (
     <section
-      className="relative w-full text-white overflow-hidden"
-      style={{ height: "min(100svh, 100vh)" }}
+      className="relative w-full text-white overflow-hidden -mt-0"
+      style={{ height: "min(100svh, 100vh)", marginTop: 0 }}
     >
-      {/* Background — user's collector-room image, full-bleed */}
+      {/* Background — collector room, full-bleed under fixed nav */}
       <motion.div style={{ y }} className="absolute inset-0">
         <img
           src={heroBg}
           alt="Paper &amp; Loop collector's room"
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ objectPosition: "center 40%" }}
+          style={{ objectPosition: "center 45%" }}
         />
         {/* Subtle dark overlay for text legibility (28% baseline, deepens on scroll) */}
         <motion.div className="absolute inset-0 bg-black" style={{ opacity: overlay }} />
@@ -43,7 +44,7 @@ const Hero = ({ heroBg }) => {
 
       {/* Content — left-aligned; right side stays empty so the room breathes */}
       <motion.div
-        style={{ y: contentY, opacity: contentOpacity }}
+        style={{ y: contentY, opacity: contentOpacity, paddingTop: navOffset }}
         className="relative z-10 h-full pl-container flex flex-col justify-center"
       >
         <div className="max-w-2xl lg:max-w-[54%]">
@@ -206,6 +207,7 @@ const Home = ({ settings }) => {
   const [testimonials, setTestimonials] = useState([]);
   const [gallery, setGallery] = useState([]);
   const nav = useNavigate();
+  const navOffset = settings?.announcement ? 104 : 68;
 
   useEffect(() => {
     api.get("/products?limit=20&sort=newest").then((r) => setFeatured(r.data));
@@ -213,13 +215,11 @@ const Home = ({ settings }) => {
     api.get("/gallery").then((r) => setGallery(r.data));
   }, []);
 
-  const heroBg =
-    settings?.hero_background_url ||
-    "https://customer-assets-jai6qajn.emergentagent.net/job_paper-loop-build/artifacts/in0gb79z_image.png";
+  const heroBg = resolveMedia(settings?.hero_background_url || brandAsset("hero"));
 
   return (
-    <div>
-      <Hero heroBg={heroBg} />
+    <div className="bg-[color:var(--pl-black)]">
+      <Hero heroBg={heroBg} navOffset={navOffset} />
 
       {/* Marquee */}
       <div className="bg-[color:var(--pl-orange)] text-white overflow-hidden border-y border-white/5">

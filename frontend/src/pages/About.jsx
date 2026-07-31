@@ -1,11 +1,12 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { FadeUp } from "@/components/Reveal";
+import { brandAsset } from "@/lib/assets";
 
 const About = () => (
   <div className="pl-section-light">
     <div className="relative min-h-[70vh] bg-[color:var(--pl-black)] text-white flex items-end overflow-hidden">
-      <img src="https://images.unsplash.com/photo-1523585298601-d46ae038d7d3?w=1800" alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+      <img src={brandAsset("authAbout")} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
       <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
       <div className="pl-container relative z-10 py-24">
         <div className="text-[11px] tracking-[0.25em] uppercase text-[color:var(--pl-orange)] mb-4">About Paper &amp; Loop</div>

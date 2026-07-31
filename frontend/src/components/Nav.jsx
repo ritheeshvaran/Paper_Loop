@@ -13,6 +13,18 @@ const links = [
   { to: "/about", label: "About" },
 ];
 
+const ANNOUNCEMENT_H = 36;
+const NAV_H = 68;
+
+export const useNavOffset = () => {
+  const loc = useLocation();
+  const [hasAnnouncement, setHasAnnouncement] = useState(false);
+  useEffect(() => {
+    api.get("/settings").then((r) => setHasAnnouncement(!!r.data?.announcement)).catch(() => {});
+  }, [loc.pathname]);
+  return hasAnnouncement ? ANNOUNCEMENT_H + NAV_H : NAV_H;
+};
+
 export const Nav = ({ settings }) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -22,9 +34,11 @@ export const Nav = ({ settings }) => {
   const loc = useLocation();
 
   const isHome = loc.pathname === "/";
+  const hasAnnouncement = Boolean(settings?.announcement);
+  const overHero = isHome && !scrolled;
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 30);
+    const onScroll = () => setScrolled(window.scrollY > 20);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -32,97 +46,106 @@ export const Nav = ({ settings }) => {
 
   useEffect(() => { setMobileOpen(false); setSearchOpen(false); }, [loc.pathname]);
 
-  const glass = scrolled || !isHome;
+  const navClass = overHero
+    ? "pl-nav-glass-light"
+    : scrolled || !isHome
+      ? "pl-nav-glass"
+      : "pl-nav-transparent";
+
+  const useTextLogo = !settings?.logo_url || /emergent|unsplash|pexels/i.test(settings.logo_url);
 
   return (
     <>
-      {settings?.announcement && (
-        <div data-testid="announcement-bar" className="bg-[color:var(--pl-black)] text-white text-center text-[11px] tracking-widest uppercase py-2 font-medium">
-          {settings.announcement}
-        </div>
-      )}
-
-      <motion.header
-        data-testid="site-nav"
-        initial={false}
-        animate={{
-          backgroundColor: glass ? "rgba(10,10,10,0.7)" : "rgba(10,10,10,0)",
-          borderBottomColor: glass ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0)",
-          backdropFilter: glass ? "blur(20px) saturate(180%)" : "blur(0px)",
-        }}
-        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className="sticky top-0 z-50 border-b text-white"
-        style={{ WebkitBackdropFilter: glass ? "blur(20px) saturate(180%)" : "none" }}
+      <div
+        className={`${isHome ? "fixed" : "sticky"} top-0 left-0 right-0 z-50`}
+        data-testid="site-nav-wrap"
       >
-        <div className="pl-container flex items-center justify-between h-14 md:h-[68px]">
-          <Link to="/" data-testid="nav-logo" className="flex items-center gap-2 shrink-0" data-cursor="Home">
-            {settings?.logo_url ? (
-              <img src={resolveMedia(settings.logo_url)} alt="Paper & Loop" className="h-7 md:h-8 w-auto" />
-            ) : (
-              <span className="font-display text-base tracking-tight">Paper &amp; Loop</span>
-            )}
-          </Link>
-
-          <nav className="hidden lg:flex items-center gap-10 absolute left-1/2 -translate-x-1/2">
-            {links.map((l) => (
-              <NavLink
-                key={l.to}
-                to={l.to}
-                end={l.end}
-                data-testid={`nav-link-${l.label.toLowerCase().replace(/\s+/g, "-")}`}
-                className={({ isActive }) =>
-                  `relative text-[11px] tracking-[0.28em] uppercase font-semibold transition-colors ${isActive ? "text-white" : "text-white/75 hover:text-white"}`
-                }
-              >
-                {({ isActive }) => (
-                  <span className="relative inline-flex flex-col items-center">
-                    {l.label}
-                    <motion.span
-                      layoutId="nav-underline"
-                      className="absolute -bottom-1 h-px bg-[color:var(--pl-orange)]"
-                      initial={false}
-                      animate={{ width: isActive ? 24 : 0 }}
-                      transition={{ type: "spring", damping: 22, stiffness: 320 }}
-                    />
-                  </span>
-                )}
-              </NavLink>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-1 md:gap-2">
-            <button data-testid="nav-search-btn" aria-label="Search" onClick={() => setSearchOpen(true)} className="p-2 hover:text-[color:var(--pl-orange)] transition-colors" data-cursor="Search">
-              <Search className="w-5 h-5" />
-            </button>
-            <Link to={user ? "/account" : "/login"} data-testid="nav-account-btn" aria-label="Account" className="p-2 hover:text-[color:var(--pl-orange)] transition-colors" data-cursor={user ? "Account" : "Sign in"}>
-              <User className="w-5 h-5" />
-            </Link>
-            <button
-              data-testid="nav-cart-btn"
-              aria-label="Cart"
-              onClick={() => setDrawerOpen(true)}
-              className="relative p-2 hover:text-[color:var(--pl-orange)] transition-colors"
-              data-cursor="Bag"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              {cart.items?.length > 0 && (
-                <motion.span
-                  key={cart.items.reduce((a, i) => a + i.quantity, 0)}
-                  initial={{ scale: 0 }} animate={{ scale: 1 }}
-                  transition={{ type: "spring", damping: 12, stiffness: 400 }}
-                  data-testid="cart-count"
-                  className="absolute -top-0.5 -right-0.5 bg-[color:var(--pl-orange)] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center"
-                >
-                  {cart.items.reduce((a, i) => a + i.quantity, 0)}
-                </motion.span>
-              )}
-            </button>
-            <button data-testid="nav-mobile-toggle" aria-label="Menu" onClick={() => setMobileOpen(true)} className="p-2 lg:hidden">
-              <Menu className="w-5 h-5" />
-            </button>
+        {hasAnnouncement && (
+          <div
+            data-testid="announcement-bar"
+            className="bg-[color:var(--pl-black)] text-white text-center text-[11px] tracking-widest uppercase py-2 font-medium"
+          >
+            {settings.announcement}
           </div>
-        </div>
-      </motion.header>
+        )}
+
+        <header
+          data-testid="site-nav"
+          className={`${navClass} text-white transition-[background,border-color,backdrop-filter] duration-500 ease-out`}
+          style={{ height: NAV_H }}
+        >
+          <div className="pl-container flex items-center justify-between h-full">
+            <Link to="/" data-testid="nav-logo" className="flex items-center shrink-0 group" data-cursor="Home">
+              {useTextLogo ? (
+                <span className="font-display text-[15px] tracking-[-0.02em] uppercase text-white group-hover:text-white/90 transition-colors">
+                  Paper <span className="text-[color:var(--pl-orange)]">&</span> Loop
+                </span>
+              ) : (
+                <img src={resolveMedia(settings.logo_url)} alt="Paper & Loop" className="h-7 w-auto" />
+              )}
+            </Link>
+
+            <nav className="hidden lg:flex items-center gap-10 absolute left-1/2 -translate-x-1/2">
+              {links.map((l) => (
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  end={l.end}
+                  data-testid={`nav-link-${l.label.toLowerCase().replace(/\s+/g, "-")}`}
+                  className={({ isActive }) =>
+                    `relative text-[11px] tracking-[0.26em] uppercase font-medium transition-colors duration-300 ${isActive ? "text-white" : "text-white/75 hover:text-white"}`
+                  }
+                >
+                  {({ isActive }) => (
+                    <span className="relative inline-flex flex-col items-center py-1">
+                      {l.label}
+                      <motion.span
+                        layoutId="nav-underline"
+                        className="absolute -bottom-0.5 h-px bg-[color:var(--pl-orange)]"
+                        initial={false}
+                        animate={{ width: isActive ? 20 : 0, opacity: isActive ? 1 : 0 }}
+                        transition={{ type: "spring", damping: 24, stiffness: 340 }}
+                      />
+                    </span>
+                  )}
+                </NavLink>
+              ))}
+            </nav>
+
+            <div className="flex items-center gap-0.5">
+              <button data-testid="nav-search-btn" aria-label="Search" onClick={() => setSearchOpen(true)} className="p-2.5 text-white/85 hover:text-[color:var(--pl-orange)] transition-colors duration-300" data-cursor="Search">
+                <Search className="w-[18px] h-[18px]" strokeWidth={1.75} />
+              </button>
+              <Link to={user ? "/account" : "/login"} data-testid="nav-account-btn" aria-label="Account" className="p-2.5 text-white/85 hover:text-[color:var(--pl-orange)] transition-colors duration-300" data-cursor={user ? "Account" : "Sign in"}>
+                <User className="w-[18px] h-[18px]" strokeWidth={1.75} />
+              </Link>
+              <button
+                data-testid="nav-cart-btn"
+                aria-label="Cart"
+                onClick={() => setDrawerOpen(true)}
+                className="relative p-2.5 text-white/85 hover:text-[color:var(--pl-orange)] transition-colors duration-300"
+                data-cursor="Bag"
+              >
+                <ShoppingBag className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                {cart.items?.length > 0 && (
+                  <motion.span
+                    key={cart.items.reduce((a, i) => a + i.quantity, 0)}
+                    initial={{ scale: 0 }} animate={{ scale: 1 }}
+                    transition={{ type: "spring", damping: 12, stiffness: 400 }}
+                    data-testid="cart-count"
+                    className="absolute top-1 right-1 bg-[color:var(--pl-orange)] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center"
+                  >
+                    {cart.items.reduce((a, i) => a + i.quantity, 0)}
+                  </motion.span>
+                )}
+              </button>
+              <button data-testid="nav-mobile-toggle" aria-label="Menu" onClick={() => setMobileOpen(true)} className="p-2.5 lg:hidden text-white/85 hover:text-white">
+                <Menu className="w-[18px] h-[18px]" strokeWidth={1.75} />
+              </button>
+            </div>
+          </div>
+        </header>
+      </div>
 
       <AnimatePresence>
         {mobileOpen && (
@@ -130,10 +153,10 @@ export const Nav = ({ settings }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-[color:var(--pl-black)] text-white flex flex-col"
+            className="fixed inset-0 z-[60] bg-[color:var(--pl-black)]/95 backdrop-blur-xl text-white flex flex-col"
           >
-            <div className="pl-container flex items-center justify-between h-16">
-              <span className="font-display uppercase tracking-tight">Menu</span>
+            <div className="pl-container flex items-center justify-between h-[68px]">
+              <span className="font-display uppercase tracking-tight text-sm">Paper &amp; Loop</span>
               <button onClick={() => setMobileOpen(false)} aria-label="Close" className="p-2"><X /></button>
             </div>
             <nav className="pl-container flex-1 flex flex-col gap-6 justify-center">
@@ -213,3 +236,5 @@ const SearchOverlay = ({ open, onClose }) => {
     </AnimatePresence>
   );
 };
+
+export { ANNOUNCEMENT_H, NAV_H };

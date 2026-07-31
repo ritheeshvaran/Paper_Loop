@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { brandAsset } from "@/lib/assets";
 
 const Register = () => {
   const nav = useNavigate();
@@ -36,7 +37,7 @@ const Register = () => {
   return (
     <div className="min-h-screen grid md:grid-cols-2">
       <div className="hidden md:block relative bg-[color:var(--pl-black)] text-white overflow-hidden">
-        <img src="https://images.unsplash.com/photo-1523585298601-d46ae038d7d3?w=1600" alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+        <img src={brandAsset("authRegister")} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black" />
         <div className="relative z-10 p-12 h-full flex flex-col justify-between">
           <Link to="/" className="text-white uppercase tracking-widest text-xs flex items-center gap-2"><ArrowLeft className="w-3 h-3" /> Back to Paper &amp; Loop</Link>

@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { OtpStep } from "@/pages/Register";
+import { brandAsset } from "@/lib/assets";
 
 const ForgotPassword = () => {
   const nav = useNavigate();
@@ -43,7 +44,7 @@ const ForgotPassword = () => {
   return (
     <div className="min-h-screen grid md:grid-cols-2">
       <div className="hidden md:block relative bg-[color:var(--pl-black)] text-white overflow-hidden">
-        <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1600" alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+        <img src={brandAsset("authForgot")} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black" />
         <div className="relative z-10 p-12 h-full flex flex-col justify-between">
           <Link to="/login" className="text-white uppercase tracking-widest text-xs flex items-center gap-2"><ArrowLeft className="w-3 h-3" /> Back to sign in</Link>

@@ -1,11 +1,12 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { FadeUp } from "@/components/Reveal";
+import { brandAsset } from "@/lib/assets";
 
 const items = [
-  { title: "Oversized Tees", tag: "Season 2026", img: "https://images.unsplash.com/photo-1523585298601-d46ae038d7d3?w=1200" },
-  { title: "Heavy Hoodies", tag: "Season 2026", img: "https://images.unsplash.com/photo-1586670926282-e5fc05bf15c3?w=1200" },
-  { title: "Accessories", tag: "Late 2026", img: "https://images.pexels.com/photos/32969128/pexels-photo-32969128.jpeg?auto=compress&cs=tinysrgb&w=1200" },
+  { title: "Oversized Tees", tag: "Season 2026", asset: "comingSoonTees" },
+  { title: "Heavy Hoodies", tag: "Season 2026", asset: "comingSoonHoodies" },
+  { title: "Accessories", tag: "Late 2026", asset: "comingSoonAccessories" },
 ];
 
 const ComingSoon = () => (
@@ -28,7 +29,7 @@ const ComingSoon = () => (
             className="group relative overflow-hidden bg-neutral-900"
           >
             <div className="aspect-[3/4] relative overflow-hidden">
-              <img src={it.img} alt={it.title} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700" />
+              <img src={brandAsset(it.asset)} alt={it.title} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700" />
               <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
             </div>
             <div className="p-6">

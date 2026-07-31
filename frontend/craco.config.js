@@ -128,8 +128,8 @@ webpackConfig.devServer = (devServerConfig) => {
   return devServerConfig;
 };
 
-// Wrap with visual edits (automatically adds babel plugin, dev server, and overlay in dev mode)
-if (isDevServer) {
+// Wrap with visual edits only when explicitly enabled (Emergent dev tooling — off by default)
+if (isDevServer && process.env.ENABLE_VISUAL_EDITS === "true") {
   try {
     const { withVisualEdits } = require("@emergentbase/visual-edits/craco");
     webpackConfig = withVisualEdits(webpackConfig);

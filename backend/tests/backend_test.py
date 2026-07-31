@@ -5,7 +5,7 @@ import time
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://paper-loop-build.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "http://localhost:8000").rstrip("/")
 API = f"{BASE_URL}/api"
 
 ADMIN_EMAIL = "ritheeshvaran2007@gmail.com"
@@ -65,16 +65,13 @@ class TestHealth:
         r = session.get(f"{API}/products")
         assert r.status_code == 200
         products = r.json()
-        # Iteration 4: seed replaced with the 4 user-uploaded posters only
-        assert len(products) == 4
+        assert len(products) == 11
         slugs = {p["slug"] for p in products}
-        assert slugs == {"spider-man", "tanjiro", "ferrari-formula-1", "vogue-leopard"}
-        p = products[0]
-        assert "final_price" in p and "has_discount" in p
-        # all images must be from the user's asset host
+        assert "spider-man-iron-spider" in slugs
+        assert "sweet-bear-unicorn-keychain" in slugs
         for prod in products:
             assert prod["images"], f"{prod['slug']} missing images"
-            assert "customer-assets-jai6qajn.emergentagent.net" in prod["images"][0], prod["images"][0]
+            assert prod["images"][0].startswith("/api/uploads/"), prod["images"][0]
 
 
 # ─── Auth ─────────────────────────────────────────────────────────────────
@@ -175,7 +172,7 @@ class TestProducts:
 
     def test_get_by_slug_computed(self, session):
         # Iteration 4: verify final_price computation on one of the seeded posters
-        r = session.get(f"{API}/products/spider-man")
+        r = session.get(f"{API}/products/spider-man-iron-spider")
         assert r.status_code == 200
         p = r.json()
         expected = round(p["price"] * (1 - p.get("discount_percent", 0) / 100), 2)

@@ -7,15 +7,10 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { formatINR } from "@/lib/format";
 import { resolveMedia } from "@/lib/media";
+import { brandAsset, ROOM_TEMPLATES } from "@/lib/assets";
 import { ProductCard } from "@/components/ProductCard";
 import { FadeUp } from "@/components/Reveal";
 import { toast } from "sonner";
-
-const ROOM_TEMPLATES = [
-  { name: "Bedroom", img: "https://images.pexels.com/photos/33050959/pexels-photo-33050959.jpeg?auto=compress&cs=tinysrgb&w=1600", zone: { top: "22%", left: "38%", width: "24%", height: "34%" } },
-  { name: "Gaming setup", img: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600", zone: { top: "18%", left: "36%", width: "28%", height: "38%" } },
-  { name: "Living room", img: "https://images.pexels.com/photos/36907020/pexels-photo-36907020.jpeg?auto=compress&cs=tinysrgb&w=1600", zone: { top: "20%", left: "40%", width: "22%", height: "32%" } },
-];
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -68,9 +63,9 @@ const ProductDetail = () => {
               <img src={images[activeImg]} alt={product.name} className="w-full h-full object-cover" />
             ) : (
               <div className="relative w-full h-full">
-                <img src={room.img} alt="Room preview" className="absolute inset-0 w-full h-full object-cover" />
+                <img src={brandAsset(room.asset)} alt="Room preview" className="absolute inset-0 w-full h-full object-cover" />
                 <div className="absolute" style={{ ...room.zone, boxShadow: "0 30px 80px -20px rgba(0,0,0,0.5)" }}>
-                  <img src={product.images?.[0]} alt="poster overlay" className="w-full h-full object-cover" style={{ filter: "brightness(0.95) contrast(1.05)" }} />
+                  <img src={resolveMedia(product.images?.[0])} alt="poster overlay" className="w-full h-full object-cover" style={{ filter: "brightness(0.95) contrast(1.05)" }} />
                 </div>
               </div>
             )}

@@ -41,10 +41,10 @@ import AdminActivity from "@/pages/admin/Activity";
 import AdminAnalytics from "@/pages/admin/Analytics";
 import AdminTestimonials from "@/pages/admin/Testimonials";
 
-const Shell = ({ settings, children }) => (
+const Shell = ({ settings, children, darkMain = false }) => (
   <>
     <Nav settings={settings} />
-    <main>{children}</main>
+    <main className={darkMain ? "bg-[color:var(--pl-black)]" : undefined}>{children}</main>
     <Footer settings={settings} />
     <CartDrawer />
   </>
@@ -80,7 +80,7 @@ function App() {
             <Toaster position="bottom-right" theme="dark" />
             <CustomCursor />
             <Routes>
-              <Route path="/" element={<Shell settings={settings}><Home settings={settings} /></Shell>} />
+              <Route path="/" element={<Shell settings={settings} darkMain><Home settings={settings} /></Shell>} />
               <Route path="/shop" element={<Shell settings={settings}><Shop /></Shell>} />
               <Route path="/collections" element={<Navigate to="/shop" replace />} />
               <Route path="/collections/:slug" element={<LegacyCollectionsRedirect />} />
