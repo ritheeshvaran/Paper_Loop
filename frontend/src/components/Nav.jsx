@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { api } from "@/lib/api";
 import { resolveMedia } from "@/lib/media";
+import { asArray } from "@/lib/lists";
 
 const links = [
   { to: "/", label: "Home", end: true },
@@ -187,7 +188,7 @@ const SearchOverlay = ({ open, onClose }) => {
     const t = setTimeout(async () => {
       try {
         const { data } = await api.get(`/products?q=${encodeURIComponent(q)}&limit=8`);
-        setResults(data);
+        setResults(asArray(data));
       } catch (e) { setResults([]); }
     }, 250);
     return () => clearTimeout(t);

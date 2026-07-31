@@ -6,6 +6,12 @@ export const BACKEND_URL =
   process.env.NODE_ENV === "production" ? configured : configured || "";
 export const API = BACKEND_URL ? `${BACKEND_URL}/api` : "/api";
 
+if (process.env.NODE_ENV === "production" && !BACKEND_URL) {
+  console.error(
+    "[Paper & Loop] REACT_APP_BACKEND_URL is missing. Set it in Vercel env vars so API calls reach FastAPI instead of this static site.",
+  );
+}
+
 export const api = axios.create({ baseURL: API });
 
 api.interceptors.request.use((config) => {

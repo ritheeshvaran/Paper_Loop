@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
+import { asArray } from "@/lib/lists";
 import { formatDate, formatINR, statusLabel, statusColor } from "@/lib/format";
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [filter, setFilter] = useState("all");
-  useEffect(() => { api.get("/orders").then((r) => setOrders(r.data)); }, []);
+  useEffect(() => { api.get("/orders").then((r) => setOrders(asArray(r.data))).catch(() => setOrders([])); }, []);
   const filtered = filter === "all" ? orders : orders.filter((o) => o.status === filter);
 
   return (
@@ -36,13 +37,13 @@ const Orders = () => {
                 <Link to={`/account/orders/${o.id}`} data-testid={`order-row-${o.order_number}`} className="block border border-neutral-200 p-6 hover:border-black transition-colors">
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <div className="flex -space-x-3">
-                      {o.items.slice(0, 3).map((it, i) => (
+                      {asArray(o.items).slice(0, 3).map((it, i) => (
                         <img key={i} src={it.product_image} alt="" className="w-14 h-14 object-cover border-2 border-white bg-neutral-100" />
                       ))}
                     </div>
                     <div className="flex-1">
                       <div className="font-mono text-xs text-neutral-500">{o.order_number}</div>
-                      <div className="font-display uppercase text-lg mt-1">{o.items.length} {o.items.length > 1 ? "items" : "item"}</div>
+                      <div className="font-display uppercase text-lg mt-1">{asArray(o.items).length} {asArray(o.items).length > 1 ? "items" : "item"}</div>
                       <div className="text-xs text-neutral-500">Placed {formatDate(o.created_at)}</div>
                     </div>
                     <div className="md:text-right">

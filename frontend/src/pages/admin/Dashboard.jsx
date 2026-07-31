@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
+import { asArray } from "@/lib/lists";
 import { formatINR, formatDate, statusLabel, statusColor } from "@/lib/format";
 
 const StatCard = ({ label, value, sub, delay = 0 }) => (
@@ -19,7 +20,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     api.get("/admin/analytics").then((r) => setData(r.data));
-    api.get("/admin/orders").then((r) => setOrders(r.data.slice(0, 8)));
+    api.get("/admin/orders").then((r) => setOrders(asArray(r.data).slice(0, 8))).catch(() => setOrders([]));
   }, []);
 
   return (

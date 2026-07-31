@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { api } from "@/lib/api";
+import { asArray } from "@/lib/lists";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
@@ -17,7 +18,7 @@ export const CartProvider = ({ children }) => {
     try {
       const [c, w] = await Promise.all([api.get("/cart"), api.get("/wishlist")]);
       setCart(c.data);
-      setWishlist(w.data);
+      setWishlist(asArray(w.data));
     } catch (e) { /* ignore */ }
   }, [user]);
 

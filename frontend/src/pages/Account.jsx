@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import { asArray } from "@/lib/lists";
 import { formatDate, statusLabel, statusColor } from "@/lib/format";
 import { toast } from "sonner";
 
@@ -11,7 +12,7 @@ const Account = () => {
   const [saving, setSaving] = useState(false);
   const [orders, setOrders] = useState([]);
   useEffect(() => { if (user) setForm(user); }, [user]);
-  useEffect(() => { api.get("/orders").then((r) => setOrders(r.data.slice(0, 3))); }, []);
+  useEffect(() => { api.get("/orders").then((r) => setOrders(asArray(r.data).slice(0, 3))).catch(() => setOrders([])); }, []);
 
   const save = async () => {
     setSaving(true);

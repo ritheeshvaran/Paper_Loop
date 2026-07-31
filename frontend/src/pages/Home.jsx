@@ -5,6 +5,7 @@ import { ArrowRight, ArrowUpRight, Star, ChevronLeft, ChevronRight } from "lucid
 import { api } from "@/lib/api";
 import { resolveMedia } from "@/lib/media";
 import { brandAsset } from "@/lib/assets";
+import { asArray } from "@/lib/lists";
 import { ProductCard } from "@/components/ProductCard";
 import { FadeUp } from "@/components/Reveal";
 import { toast } from "sonner";
@@ -155,14 +156,15 @@ const MagneticButton = ({ to, primary, testId, children }) => {
 
 /* ── Testimonials & newsletter (unchanged) ────────────────────────────── */
 const Testimonials = ({ items }) => {
+  const list = asArray(items);
   const [i, setI] = useState(0);
   useEffect(() => {
-    if (!items.length) return;
-    const t = setInterval(() => setI((v) => (v + 1) % items.length), 6500);
+    if (!list.length) return;
+    const t = setInterval(() => setI((v) => (v + 1) % list.length), 6500);
     return () => clearInterval(t);
-  }, [items.length]);
-  if (!items.length) return null;
-  const t = items[i];
+  }, [list.length]);
+  if (!list.length) return null;
+  const t = list[i];
   return (
     <div className="max-w-3xl mx-auto text-center">
       <AnimatePresence mode="wait">
@@ -173,11 +175,11 @@ const Testimonials = ({ items }) => {
         </motion.div>
       </AnimatePresence>
       <div className="mt-8 flex items-center justify-center gap-6">
-        <button onClick={() => setI((v) => (v - 1 + items.length) % items.length)} className="p-2 border border-white/20 hover:border-[color:var(--pl-orange)] hover:text-[color:var(--pl-orange)]" aria-label="Previous"><ChevronLeft className="w-4 h-4" /></button>
+        <button onClick={() => setI((v) => (v - 1 + list.length) % list.length)} className="p-2 border border-white/20 hover:border-[color:var(--pl-orange)] hover:text-[color:var(--pl-orange)]" aria-label="Previous"><ChevronLeft className="w-4 h-4" /></button>
         <div className="flex gap-1">
-          {items.map((_, k) => <button key={k} onClick={() => setI(k)} className={`w-6 h-0.5 ${k === i ? "bg-[color:var(--pl-orange)]" : "bg-white/20"}`} aria-label={`Slide ${k + 1}`} />)}
+          {list.map((_, k) => <button key={k} onClick={() => setI(k)} className={`w-6 h-0.5 ${k === i ? "bg-[color:var(--pl-orange)]" : "bg-white/20"}`} aria-label={`Slide ${k + 1}`} />)}
         </div>
-        <button onClick={() => setI((v) => (v + 1) % items.length)} className="p-2 border border-white/20 hover:border-[color:var(--pl-orange)] hover:text-[color:var(--pl-orange)]" aria-label="Next"><ChevronRight className="w-4 h-4" /></button>
+        <button onClick={() => setI((v) => (v + 1) % list.length)} className="p-2 border border-white/20 hover:border-[color:var(--pl-orange)] hover:text-[color:var(--pl-orange)]" aria-label="Next"><ChevronRight className="w-4 h-4" /></button>
       </div>
     </div>
   );
@@ -210,9 +212,9 @@ const Home = ({ settings }) => {
   const navOffset = settings?.announcement ? 104 : 68;
 
   useEffect(() => {
-    api.get("/products?limit=20&sort=newest").then((r) => setFeatured(r.data));
-    api.get("/testimonials").then((r) => setTestimonials(r.data));
-    api.get("/gallery").then((r) => setGallery(r.data));
+    api.get("/products?limit=20&sort=newest").then((r) => setFeatured(asArray(r.data))).catch(() => setFeatured([]));
+    api.get("/testimonials").then((r) => setTestimonials(asArray(r.data))).catch(() => setTestimonials([]));
+    api.get("/gallery").then((r) => setGallery(asArray(r.data))).catch(() => setGallery([]));
   }, []);
 
   const heroBg = resolveMedia(settings?.hero_background_url || brandAsset("hero"));
@@ -245,9 +247,9 @@ const Home = ({ settings }) => {
             <Link to="/shop?type=posters" className="hidden md:inline-flex pl-btn pl-btn-ghost-light">All Posters <ArrowUpRight className="w-4 h-4" /></Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
-            {featured.slice(0, 4).map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+            {asArray(featured).slice(0, 4).map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
           </div>
-          {featured.length === 0 && (
+          {asArray(featured).length === 0 && (
             <div className="py-16 text-center text-neutral-500 text-sm">Products load in the admin panel — upload posters via /admin/products to fill this grid.</div>
           )}
         </div>
@@ -306,7 +308,7 @@ const Home = ({ settings }) => {
       </section>
 
       {/* SECTION 4 — Customer Gallery */}
-      {gallery.length > 0 && (
+      {asArray(gallery).length > 0 && (
         <section className="pl-section-gray py-24 md:py-32">
           <div className="pl-container">
             <FadeUp>
@@ -314,7 +316,7 @@ const Home = ({ settings }) => {
               <h2 className="font-display text-editorial uppercase mb-12">On real <br /><span className="text-[color:var(--pl-orange)]">walls.</span></h2>
             </FadeUp>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-              {gallery.slice(0, 12).map((g, i) => (
+              {asArray(gallery).slice(0, 12).map((g, i) => (
                 <motion.a
                   key={g.id}
                   href={g.link_url || "#"}
@@ -336,7 +338,7 @@ const Home = ({ settings }) => {
       )}
 
       {/* Testimonials */}
-      {testimonials.length > 0 && (
+      {asArray(testimonials).length > 0 && (
         <section className="pl-section-dark py-24 md:py-32">
           <div className="pl-container text-white">
             <FadeUp>

@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Heart, ShoppingBag, Minus, Plus, Truck, ShieldCheck, Package, ArrowLeft, Bell } from "lucide-react";
 import { api } from "@/lib/api";
+import { asArray } from "@/lib/lists";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { formatINR } from "@/lib/format";
@@ -29,8 +30,8 @@ const ProductDetail = () => {
     api.get(`/products/${slug}`).then((r) => {
       setProduct(r.data);
       api.get(`/products?category=${r.data.category_slug}&limit=8`).then((rr) => {
-        setRelated(rr.data.filter((p) => p.id !== r.data.id).slice(0, 4));
-      });
+        setRelated(asArray(rr.data).filter((p) => p.id !== r.data.id).slice(0, 4));
+      }).catch(() => setRelated([]));
     }).catch(() => setProduct(null));
     window.scrollTo({ top: 0, behavior: "smooth" });
     // eslint-disable-next-line react-hooks/exhaustive-deps

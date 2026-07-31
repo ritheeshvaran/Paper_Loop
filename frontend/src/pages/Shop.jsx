@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpDown, SlidersHorizontal } from "lucide-react";
 import { api } from "@/lib/api";
+import { asArray } from "@/lib/lists";
 import { ProductCard } from "@/components/ProductCard";
 import { FadeUp } from "@/components/Reveal";
 
@@ -66,7 +67,7 @@ const Shop = () => {
 
   useEffect(() => {
     setLoading(true);
-    api.get(`/products?limit=200&sort=${sort}`).then((r) => { setProducts(r.data); setLoading(false); });
+    api.get(`/products?limit=200&sort=${sort}`).then((r) => { setProducts(asArray(r.data)); setLoading(false); }).catch(() => { setProducts([]); setLoading(false); });
   }, [sort]);
 
   const filtered = useMemo(() => {
