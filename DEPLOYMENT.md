@@ -92,14 +92,39 @@ Note the public URL, e.g. `https://paper-loop-api.up.railway.app`.
 
 ### Deploy
 
-1. Import the GitHub repo into Vercel.
-2. Set **Root Directory** to `frontend`.
-3. **Build command:** `npm run build` (or `npm install --legacy-peer-deps && npm run build`)
-4. **Output directory:** `build`
-5. Add `REACT_APP_BACKEND_URL` pointing to your live API.
-6. Deploy.
+Import the GitHub repo into Vercel. Use **one** of these setups:
 
-`frontend/vercel.json` handles SPA routing (all routes → `index.html`).
+#### Option A — Root Directory = `frontend` (recommended)
+
+| Setting | Value |
+|---------|-------|
+| **Root Directory** | `frontend` |
+| **Framework Preset** | Create React App |
+| **Install Command** | `npm install --legacy-peer-deps` |
+| **Build Command** | `npm run build` |
+| **Output Directory** | `build` |
+
+Uses `frontend/vercel.json` for SPA routing.
+
+#### Option B — Root Directory = repository root (default)
+
+| Setting | Value |
+|---------|-------|
+| **Root Directory** | *(leave empty)* |
+| **Framework Preset** | Other |
+| **Install Command** | `cd frontend && npm install --legacy-peer-deps` |
+| **Build Command** | `cd frontend && npm run build` |
+| **Output Directory** | `frontend/build` |
+
+Uses root `vercel.json` (monorepo config).
+
+#### Environment variables (both options)
+
+| Variable | Value |
+|----------|-------|
+| `REACT_APP_BACKEND_URL` | `https://your-api.up.railway.app` (no trailing slash) |
+
+**Why you may see `404: NOT_FOUND`:** Vercel builds from the repo root by default. Without Root Directory = `frontend` (or root `vercel.json`), it looks for `build/` at the repo root — which does not exist — so the deployment has no static files to serve.
 
 ### Custom domain
 
